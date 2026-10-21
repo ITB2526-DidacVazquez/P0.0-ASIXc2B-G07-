@@ -1,9 +1,8 @@
-cat << 'EOF' > README.md
 # 🚀 Projecte P0.0: Desplegament d’Infraestructura i Serveis
 
-> **Mòdul:** MP14 - Projecte Intermodular d'Administració de Sistemes Informàtics en Xarxa (ASIX)  
-> **Grup:** `P0.0-ASIXc2B-G07`  
-> **Curs:** 2025-2026  
+> **Mòdul:** MP14 - Projecte Intermodular d'Administració de Sistemes Informàtics en Xarxa (ASIX)
+> **Grup:** `P0.0-ASIXc2B-G07`
+> **Curs:** 2025-2026
 
 ---
 
@@ -17,35 +16,27 @@ cat << 'EOF' > README.md
 
 ---
 
-## 📌 Descripció del Projecte
+## 📌 Descripció del Projecte (MVP - Sprint 1)
 
-Aquest projecte té com a objectiu el disseny, configuració i desplegament des de zero d'una **infraestructura de xarxa multicapa segura** i completa per suportar una aplicació web corporativa.
+Aquest projecte té com a objectiu el disseny, configuració i desplegament d'una **infraestructura de xarxa multicapa** per suportar una aplicació web corporativa i serveis de xarxa.
 
-### 🏢 Arquitectura de Xarxa
-La topologia s'estructura al voltant d'un **Router central (`R-NCC`)** que segmenta la xarxa en 3 zones diferenciades:
-* **NAT (Exterior):** Accés directe a Internet per a descàrregues i actualitzacions.
-* **DMZ (Zona Desmilitaritzada - `10.0.1.0/24`):** Conté els serveis accessibles des de l'exterior:
-  * Servidor Web (`W-NCC`)
-  * Servidor FTP (`F-NCC`)
-* **Intranet (Xarxa Privada - `10.0.2.0/24`):** Zona d'alta seguretat per a la gestió interna:
-  * Servidor de Base de Dades MySQL (`B-NCC`)
-  * Servidors d'Infraestructura DNS i DHCP (`S-NCC`)
-  * Equips Clients (Windows i Linux)
+En la fase de **MVP (Sprint 1)**, la **VM Router / Servidor** allotja directament la pila de serveis en contenidors Docker i gestiona l'enrutament directe entre la xarxa Intranet i la DMZ.
 
 ---
 
-## 🗺️ Taula d'Adreçament IP
+## 🗺️ Taula d'Adreçament IP (MVP Realitzat)
 
-| Equip | Hostname | Zona / Subxarxa | Interfície | Adreça IP |
-| :--- | :--- | :--- | :--- | :--- |
-| **Router** | `R-NCC` | NAT / WAN | `eth0` | Assignada per DHCP |
-| **Router** | `R-NCC` | DMZ | `eth1` | `10.0.1.1 /24` |
-| **Router** | `R-NCC` | Intranet | `eth2` | `10.0.2.1 /24` |
-| **Servidor Web** | `W-NCC` | DMZ | `eth0` | `10.0.1.10 /24` |
-| **Servidor FTP** | `F-NCC` | DMZ | `eth0` | `10.0.1.20 /24` |
-| **Servidor BBDD** | `B-NCC` | Intranet | `eth0` | `10.0.2.10 /24` |
-| **DNS / DHCP** | `S-NCC` | Intranet | `eth0` | `10.0.2.20 /24` |
-| **Clients** | `PC-WIN` / `PC-LNX` | Intranet | `eth0` | Dinàmica (DHCP) |
+| Equip / Rol | Interfície | Subxarxa / Rol | Adreça IP | Porta d'Enllaç (*Gateway*) | Servidor DNS |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`VM Router / Servidor`** | `enp2s0`<br>`enp3s0` | DMZ (Serveis)<br>Intranet (Clients) | `172.29.88.10/24`<br>`172.29.99.233/24` | N/A<br>N/A | `127.0.0.1`<br>`127.0.0.1` |
+| **`Client-Lin` (Linux)** | `enp2s0` | Intranet | `172.29.99.11/24` | `172.29.99.233` | `172.29.88.10` |
+| **`Client-Win` (Windows)** | Adaptador | Intranet | `172.29.99.12/24` | `172.29.99.233` | `172.29.88.10` |
+
+### 🐳 Serveis Desplegats en Docker
+* **Web (Nginx + PHP-FPM):** `http://172.29.88.10` / `http://s-ncc.asix.local`
+* **DNS (BIND9):** `172.29.88.10:53`
+* **Base de Dades (MySQL 8.0):** `172.29.88.10:3306`
+* **FTP (Alpine FTP):** `172.29.88.10:21`
 
 ---
 
@@ -59,6 +50,7 @@ P0.0-ASIXc2B-G07/
 │   │   └── estudi_previ.md
 │   ├── 02-admin/                  # Manuals de configuració d'administrador (RA3, RA4)
 │   │   ├── arquitectura.md        # Diagrames de xarxa i taules d'IPs detallades
+│   │   ├── mvp_sprint1.md         # Documentació del MVP i configuració de xarxa/Docker
 │   │   ├── serveis.md             # Guia de serveis (DNS, Web, BBDD, FTP)
 │   │   └── git_workflow.md        # Procediment i comandes del flux de treball Git
 │   ├── 03-client/                 # Manuals d'usuari i instal·lació de clients (RA3, RA4)
@@ -68,6 +60,7 @@ P0.0-ASIXc2B-G07/
 │   └── 05-proves/                 # Pla de qualitat i banc de proves (RA2)
 │       └── test_plan.md
 └── src/                           # Codi font del projecte
+    ├── docker-compose.yml         # Fitxer de desplegament dels contenidors Docker
     ├── bbdd/                      # Scripts d'estructura i càrrega de dades SQL
     ├── app/                       # Codi de l'aplicació Web
     └── scripts/                   # Scripts d'automatització
