@@ -279,7 +279,7 @@ ip route          # ha de mostrar només: default via 172.29.99.233
 Per evitar el conflicte amb SSH/LDAP, es treballa amb el remot HTTPS:
 
 ```bash
-git remote set-url origin https://github.com/ITB2526-DidacVazquez/P0.0-ASIXc2B-G07.git
+git remote set-url origin https://github.com/ITB2526-DidacVazquez/P0.0-ASIXc2B-G07-.git
 git add .
 git commit -m "docs: afegir guia MVP Sprint 1"
 git push origin main
@@ -302,4 +302,4 @@ Quan Git demani credencials:
 - [ ] Restringir el port `3306` (no exposar MySQL a tota la xarxa) amb `ufw` / `iptables`.
 - [ ] Fixar versions d'imatge (evitar `:latest`) per assegurar reproducibilitat.
 - [ ] Automatitzar el desplegament amb un script a `src/scripts/`.
-- [ ] Completar `docs/05-proves/test_plan.md` amb les proves de la secció 5.
+- [x] Completar `docs/05-proves/test_plan.md` amb les proves de la secció 5.
