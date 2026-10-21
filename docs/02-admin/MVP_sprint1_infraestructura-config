@@ -1,0 +1,146 @@
+# 🛠️ Guia de Desplegament de l'Infraestructura i MVP (Sprint 1)
+
+Aquest document detalla el procés passat a passat per a la creació de les màquines virtuals a la plataforma **IsardVDI**, la configuració de les interfícies de xarxa i la posada en marxa dels serveis en contenidors Docker per al **MVP del Sprint 1**.
+
+---
+
+## 1. Creació i Configuració de Màquines Virtuals (IsardVDI)
+
+Es defineix una estructura de tres màquines virtuals per simular l'entorn de xarxa enrutat:
+
+1. **VM Router / Servidor (`R-NCC` / `S-NCC`)**
+   - **Imatge base:** Ubuntu 24.04 Server
+   - **Recursos:** 3 vCPUs, 6 GB RAM
+   - **Targetes de Xarxa (Xarxes):**
+     - `Default` (Interface WAN / Internet per DHCP)
+     - `ASIXc2-ITB2` (DMZ - Subxarxa `172.29.88.0/24`)
+     - `ASIXc2-ITB3` (Intranet - Subxarxa `172.29.99.0/24`)
+
+2. **Client Linux (`Client-Lin`)**
+   - **Imatge base:** Ubuntu 24.04 Desktop
+   - **Recursos:** 1 vCPU, 4 GB RAM
+   - **Targeta de Xarxa:** Únicament la xarxa `ASIXc2-ITB3` (Intranet). *(Nota: S'ha d'eliminar la xarxa `Default` del panell d'IsardVDI per evitar conflictes d'enrutament).*
+
+3. **Client Windows (`Client-Win`)**
+   - **Imatge base:** Windows 10/11 Desktop
+   - **Recursos:** 1 vCPU, 4 GB RAM
+   - **Targeta de Xarxa:** Únicament la xarxa `ASIXc2-ITB3` (Intranet).
+
+---
+
+## 2. Configuració de Xarxa i Enrutament
+
+### A. VM Router / Servidor (`172.29.88.10` / `172.29.99.233`)
+
+Edita el fitxer de Netplan a la màquina servidor:
+```bash
+sudo nano /etc/netplan/50-cloud-init.yaml
+Configuració aplicada:
+
+YAML
+network:
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+    enp2s0:
+      addresses:
+        - 172.29.88.10/24
+    enp3s0:
+      addresses:
+        - 172.29.99.233/24
+Aplica els canvis i habilita el reenvio de paquets (Forwarding):
+
+Bash
+sudo netplan apply
+sudo sysctl -w net.ipv4.ip_forward=1
+B. Client Linux (Client-Lin)
+Edita el fitxer de Netplan al client:
+
+Bash
+sudo nano /etc/netplan/50-cloud-init.yaml
+Configuració aplicada:
+
+YAML
+network:
+  version: 2
+  ethernets:
+    enp2s0:
+      addresses:
+        - 172.29.99.11/24
+      routes:
+        - to: default
+          via: 172.29.99.233
+      nameservers:
+        addresses:
+          - 172.29.88.10
+Aplica la configuració:
+
+Bash
+sudo netplan apply
+C. Client Windows (Client-Win)
+S'assigna la configuració IP estàtica mitjançant PowerShell com a Administrador:
+
+PowerShell
+# Configurar la direcció IP i Gateway de la VM Router
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 172.29.99.12 -PrefixLength 24 -DefaultGateway 172.29.99.233
+
+# Assignar el servidor DNS apuntant al servei de la VM Router
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses ("172.29.88.10")
+3. Desplegament de Serveis en Contenidors (Docker)
+A la VM Router / Servidor, dins del directori del projecte (/home/isard/proyecto-p00 / src/), es desplega la pila de serveis utilitzant Docker Compose.
+
+Fitxer docker-compose.yml:
+
+YAML
+version: '3.8'
+
+services:
+  dns:
+    image: internetsystemsconsortium/bind9:9.18
+    container_name: D-NCC
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    restart: always
+
+  web:
+    image: richarvey/nginx-php-fpm:latest
+    container_name: W-NCC
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: B-NCC
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpassword
+    ports:
+      - "3306:3306/tcp"
+    restart: always
+
+  ftp:
+    image: delfer/alpine-ftp-server:latest
+    container_name: F-NCC
+    ports:
+      - "21:21/tcp"
+      - "21000-21010:21000-21010/tcp"
+    restart: always
+Comanda per posar en marxa els serveis:
+
+Bash
+sudo docker compose up -d
+4. Proves de Validació i Resolució d'Incidències
+Durant la posada en marxa es van detectar i resoldre les següents incidències:
+
+Conflicte d'IPs: La interfície enp3s0 del Router tenia la IP .10 assignada, entrant en conflicte amb el client. Es va reassignar la .233 al Router i la .11 al Client-Lin.
+
+Interfícies feixugues: La presència de la interfície Default a Client-Lin impedia l'enrutament cap a la Intranet. Es va eliminar la xarxa Default a IsardVDI.
+
+Validació del servei Web:
+
+Ping Capa 3: ping -c 3 172.29.88.10 (Correcte)
+
+Accés HTTP Capa 7: curl -I http://172.29.88.10 / curl -I http://s-ncc.asix.local (Retorna HTTP/1.1 200 OK).
