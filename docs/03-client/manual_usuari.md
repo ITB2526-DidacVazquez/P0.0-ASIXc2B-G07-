@@ -35,9 +35,9 @@ network:
       addresses: [172.29.99.11/24]
       routes:
         - to: default
-          via: 172.29.99.233
+          via: 172.29.99.1
       nameservers:
-        addresses: [172.29.88.10]
+        addresses: [172.29.99.10]
         search: [asix.local]
 ```
 
@@ -48,8 +48,8 @@ sudo netplan apply
 **Windows** (PowerShell com a Administrador):
 
 ```powershell
-New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 172.29.99.12 -PrefixLength 24 -DefaultGateway 172.29.99.233
-Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses ("172.29.88.10")
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 172.29.99.12 -PrefixLength 24 -DefaultGateway 172.29.99.1
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses ("172.29.99.10")
 ```
 
 ### 2.2 Opció B – DHCP
@@ -72,7 +72,7 @@ Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ResetServerAddresses
 ipconfig /renew
 ```
 
-El client rebrà una IP entre `172.29.99.100` i `172.29.99.200`, gateway `172.29.99.233` i DNS `172.29.88.10`.
+El client rebrà una IP entre `172.29.99.100` i `172.29.99.200`, gateway `172.29.99.1` i DNS `172.29.99.10`.
 
 ## 3. Accés als serveis
 
@@ -81,10 +81,10 @@ Usuari per a tots els serveis: **`bchecker`** / **`bchecker121`**.
 | Servei | Adreça | Linux | Windows |
 | :--- | :--- | :--- | :--- |
 | Aplicació web | `http://w-ncc.asix.local` | Firefox | Edge / Chrome |
-| SSH al router | `r-ncc.asix.local` | `ssh bchecker@r-ncc.asix.local` | `ssh bchecker@r-ncc.asix.local` (PowerShell) o PuTTY |
+| SSH al servidor web | `w-ncc.asix.local` | `ssh bchecker@w-ncc.asix.local` | `ssh bchecker@w-ncc.asix.local` (PowerShell) o PuTTY |
 | FTP | `ftp://f-ncc.asix.local` | `ftp f-ncc.asix.local` o FileZilla | FileZilla / Explorador de fitxers |
-| Base de dades | `b-ncc.asix.local:3306` | `mysql -h b-ncc.asix.local -u bchecker -p` | MySQL Workbench / DBeaver |
-| Monitor de xarxa | `http://172.29.88.10:3001` | Navegador | Navegador |
+| Base de dades | `b-ncc.asix.local:3306` (només des de la DMZ) | `ssh -J bchecker@w-ncc.asix.local bchecker@b-ncc.asix.local` i després `mysql -u bchecker -p` | MySQL Workbench amb túnel SSH |
+| Monitor de xarxa | `http://monitor.asix.local:3001` | Navegador | Navegador |
 
 ### Ús de l'aplicació web
 
@@ -107,9 +107,9 @@ Usuari per a tots els serveis: **`bchecker`** / **`bchecker121`**.
 | Comprovació | Linux | Windows | Resultat esperat |
 | :--- | :--- | :--- | :--- |
 | IP rebuda | `ip a show enp2s0` | `ipconfig` | IP de la Intranet |
-| Gateway | `ip route` | `route print` | `default via 172.29.99.233` |
-| Router | `ping -c 3 r` | `ping r` | Respon `172.29.99.233` |
-| DNS | `dig r-ncc.asix.local +short` | `nslookup r-ncc.asix.local` | `172.29.99.233` |
+| Gateway | `ip route` | `route print` | `default via 172.29.99.1` |
+| Router | `ping -c 3 r` | `ping r` | Respon `172.29.99.1` |
+| DNS | `dig r-ncc.asix.local +short` | `nslookup r-ncc.asix.local` | `172.29.99.1` |
 | Web | `curl -I http://w-ncc.asix.local` | Obrir al navegador | `200 OK` |
 | Internet | `ping -c 3 8.8.8.8` | `ping 8.8.8.8` | Respon (via NAT) |
 
@@ -118,7 +118,7 @@ Usuari per a tots els serveis: **`bchecker`** / **`bchecker121`**.
 | Símptoma | Causa probable | Solució |
 | :--- | :--- | :--- |
 | Hi ha Internet però no es veuen els serveis | El client té la xarxa `Default` d'IsardVDI i surt per una altra ruta | Treure la targeta `Default` a IsardVDI |
-| `ping` per IP funciona però per nom no | DNS mal configurat | Comprovar que el DNS és `172.29.88.10` |
+| `ping` per IP funciona però per nom no | DNS mal configurat | Comprovar que el DNS és `172.29.99.10` |
 | No s'obté IP per DHCP | Servei DHCP aturat a `R-NCC` | `sudo systemctl status kea-dhcp4-server` al router |
 | L'FTP connecta però no llista fitxers | Mode actiu bloquejat | Activar el mode **passiu** al client |
 | Windows no respon al `ping` | El tallafoc de Windows bloqueja ICMP | Permetre "Eco ICMPv4" al Windows Defender Firewall |

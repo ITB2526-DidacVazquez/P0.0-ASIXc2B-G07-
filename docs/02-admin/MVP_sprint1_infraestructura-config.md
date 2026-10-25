@@ -4,6 +4,8 @@
 > **Repositori:** `P0.0-ASIXc2B-G07`
 > **Responsable:** Dídac Vázquez (Coordinador Git i Administrador de Xarxa)
 
+> ℹ️ Aquesta guia descriu el **MVP del Sprint 1**, amb tots els serveis en una sola VM. L'arquitectura final (serveis repartits en DMZ, Intranet i xarxa de BBDD) i la justificació de les decisions són a [arquitectura.md](arquitectura.md).
+
 Aquest document detalla, pas a pas, la creació de les màquines virtuals a **IsardVDI**, la configuració de les interfícies de xarxa, l'enrutament i la posada en marxa dels serveis en contenidors Docker del **MVP del Sprint 1**.
 
 ## Índex

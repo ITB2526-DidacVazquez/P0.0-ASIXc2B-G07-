@@ -25,14 +25,15 @@
 
 | ID | Prova | Origen | Ordre | Resultat esperat | Resultat |
 | :-: | :--- | :--- | :--- | :--- | :-: |
-| X01 | Connectivitat amb el gateway | Client-Lin | `ping -c 3 172.29.99.233` | 0 % pèrdua | ⏳ |
+| X01 | Connectivitat amb el gateway | Client-Lin | `ping -c 3 172.29.99.1` | 0 % pèrdua | ⏳ |
 | X02 | Connectivitat amb la DMZ | Client-Lin | `ping -c 3 172.29.88.10` | 0 % pèrdua | ⏳ |
 | X03 | Connectivitat amb la DMZ | Client-Win | `ping 172.29.88.10` | 0 % pèrdua | ⏳ |
-| X04 | Ruta per defecte única | Client-Lin | `ip route` | Només `default via 172.29.99.233` | ⏳ |
+| X04 | Ruta per defecte única | Client-Lin | `ip route` | Només `default via 172.29.99.1` | ⏳ |
 | X05 | IP forwarding actiu | R-NCC | `sysctl net.ipv4.ip_forward` | `= 1` | ⏳ |
 | X06 | IP forwarding persistent | R-NCC | Reiniciar i repetir X05 | `= 1` | ⏳ |
 | X07 | Sortida a Internet (NAT) | Client-Lin | `ping -c 3 8.8.8.8` | Respon | ⏳ |
 | X08 | Regla de NAT | R-NCC | `sudo iptables -t nat -L POSTROUTING -n` | Regla `MASQUERADE` a `enp1s0` | ⏳ |
+| X09 | La DMZ no entra a la Intranet | Dockers-DMZ | `ping -c 3 -W 2 172.29.99.100` | Sense resposta (bloquejat) | ⏳ |
 
 ## 3. Proves de serveis
 
@@ -47,11 +48,11 @@
 
 | ID | Prova | Ordre | Resultat esperat | Resultat |
 | :-: | :--- | :--- | :--- | :-: |
-| N01 | Resol `R` | `dig @172.29.88.10 r.asix.local +short` | `172.29.99.233` | ⏳ |
-| N02 | Resol `R-NCC` | `dig @172.29.88.10 r-ncc.asix.local +short` | `172.29.99.233` | ⏳ |
-| N03 | Resol el web | `dig @172.29.88.10 w-ncc.asix.local +short` | `172.29.88.10` | ⏳ |
-| N04 | Resolució des de Windows | `nslookup r-ncc.asix.local` | `172.29.99.233` | ⏳ |
-| N05 | Reenviament a Internet | `dig @172.29.88.10 google.com +short` | IP pública | ⏳ |
+| N01 | Resol `R` | `dig @172.29.99.10 r.asix.local +short` | `172.29.99.1` | ⏳ |
+| N02 | Resol `R-NCC` | `dig @172.29.99.10 r-ncc.asix.local +short` | `172.29.99.1` | ⏳ |
+| N03 | Resol el web | `dig @172.29.99.10 w-ncc.asix.local +short` | `172.29.88.10` | ⏳ |
+| N04 | Resolució des de Windows | `nslookup r-ncc.asix.local` | `172.29.99.1` | ⏳ |
+| N05 | Reenviament a Internet | `dig @172.29.99.10 google.com +short` | IP pública | ⏳ |
 
 ### 3.3 DHCP
 
@@ -73,8 +74,9 @@
 
 | ID | Prova | Ordre | Resultat esperat | Resultat |
 | :-: | :--- | :--- | :--- | :-: |
-| B01 | Port obert | `nc -zv 172.29.88.10 3306` | `succeeded` | ⏳ |
-| B02 | BBDD creada | `mysql -h 172.29.88.10 -ubchecker -p -e "SHOW DATABASES;"` | Apareix `equipaments` | ⏳ |
+| B01 | BBDD aïllada de la Intranet | `nc -zv -w 3 172.29.89.10 3306` (des de Client-Lin) | Falla (no hi ha ruta) | ⏳ |
+| B01b | BBDD accessible des de la web | `nc -zv 172.29.89.10 3306` (des de Dockers-DMZ) | `succeeded` | ⏳ |
+| B02 | BBDD creada | `mysql -h 172.29.89.10 -ubchecker -p -e "SHOW DATABASES;"` (des de Dockers-DMZ) | Apareix `equipaments` | ⏳ |
 | B03 | Dades carregades | `... -e "SELECT COUNT(*) FROM equipaments.educacio;"` | Igual al nº de files del CSV − 1 | ⏳ |
 | B04 | Accents correctes | `... -e "SELECT name FROM equipaments.educacio LIMIT 5;"` | Sense caràcters estranys | ⏳ |
 
@@ -100,7 +102,7 @@
 
 | ID | Prova | Ordre / Acció | Resultat esperat | Resultat |
 | :-: | :--- | :--- | :--- | :-: |
-| M01 | Accés web | Obrir `http://172.29.88.10:3001` | Pantalla d'inici de sessió | ⏳ |
+| M01 | Accés web | Obrir `http://172.29.99.10:3001` | Pantalla d'inici de sessió | ⏳ |
 | M02 | Monitors actius | Revisar el panell | Tots els serveis en verd | ⏳ |
 | M03 | Detecció de caiguda | `sudo docker stop F-NCC` | El monitor FTP passa a vermell | ⏳ |
 
@@ -108,7 +110,7 @@
 
 | ID | Sistema | Prova | Resultat esperat | Resultat |
 | :-: | :--- | :--- | :--- | :-: |
-| U01 | R-NCC | Login per SSH | Accés correcte | ⏳ |
+| U01 | Dockers-DMZ / Dockers-Intranet / Docker-B-NCC | Login per SSH | Accés correcte | ⏳ |
 | U02 | Client-Lin | Login gràfic | Accés correcte | ⏳ |
 | U03 | Client-Win | Login gràfic | Accés correcte | ⏳ |
 | U04 | MySQL | `mysql -ubchecker -pbchecker121` | Accés correcte | ⏳ |

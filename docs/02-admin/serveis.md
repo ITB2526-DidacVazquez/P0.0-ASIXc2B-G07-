@@ -2,6 +2,7 @@
 
 > Configuració de cada servei de la infraestructura.
 > Prerequisit: xarxa i Docker configurats segons [MVP_sprint1_infraestructura-config.md](MVP_sprint1_infraestructura-config.md).
+> On va cada servei i per què: [arquitectura.md](arquitectura.md).
 
 ## Índex
 
@@ -21,16 +22,18 @@
 
 ## 0. Estat dels serveis
 
-| Servei | Hostname | On s'executa | Port(s) | Estat |
-| :--- | :--- | :--- | :--- | :-: |
-| SSH | `R-NCC` | VM (host) | 22/tcp | ⏳ |
-| Web | `W-NCC` | Docker | 80, 443/tcp | ✅ |
-| BBDD | `B-NCC` | Docker | 3306/tcp | ✅ (sense dades) |
-| DHCP | `R-NCC` | VM (host) | 67/udp | ⏳ |
-| DNS | `D-NCC` | Docker | 53/tcp+udp | ✅ (sense zona) |
-| FTP | `F-NCC` | Docker | 21, 21000-21010/tcp | ✅ |
-| Monitor | `R-NCC` | Docker | 3001/tcp | ⏳ |
-| NAT | `R-NCC` | VM (host) | — | ⏳ |
+| Servei | Hostname | Servidor | IP | Port(s) | Estat |
+| :--- | :--- | :--- | :--- | :--- | :-: |
+| SSH | — | Tots els servidors | — | 22/tcp | ⏳ |
+| Web | `W-NCC` | `Dockers-DMZ` | `172.29.88.10` | 80, 443/tcp | ✅ (MVP) |
+| FTP | `F-NCC` | `Dockers-DMZ` | `172.29.88.10` | 21, 21000-21010/tcp | ✅ (MVP) |
+| BBDD | `B-NCC` | `Docker-B-NCC` | `172.29.89.10` | 3306/tcp | ✅ (MVP, sense dades) |
+| DNS | `D-NCC` | `Dockers-Intranet` | `172.29.99.10` | 53/tcp+udp | ✅ (MVP, sense zona) |
+| Monitor | — | `Dockers-Intranet` | `172.29.99.10` | 3001/tcp | ⏳ |
+| DHCP | `R-NCC` | Router | `172.29.99.1` | 67/udp | ⏳ |
+| NAT | `R-NCC` | Router | — | — | ⏳ |
+
+> Al MVP del Sprint 1 tots els contenidors eren a la mateixa VM (`172.29.88.10`). Amb l'arquitectura final es reparteixen en tres servidors.
 
 ✅ desplegat · ⏳ pendent
 
@@ -46,7 +49,7 @@ L'enunciat exigeix que **tots els sistemes i aplicacions** tinguin l'usuari:
 
 | Sistema | Com es crea |
 | :--- | :--- |
-| `R-NCC` i `Client-Lin` (Linux) | `useradd` (vegeu a sota) |
+| Servidors Linux i `Client-Lin` | `useradd` (vegeu a sota) |
 | `Client-Win` (Windows) | `New-LocalUser` (vegeu a sota) |
 | MySQL (`B-NCC`) | [secció 4.3](#43-usuari-bchecker-a-mysql) |
 | FTP (`F-NCC`) | variable `USERS` del contenidor ([secció 7](#7-ftp-f-ncc)) |
@@ -74,7 +77,7 @@ Add-LocalGroupMember -Group "Administradors" -Member "bchecker"   # "Administrat
 
 ## 2. SSH
 
-### 2.1 Servidor SSH a `R-NCC`
+### 2.1 Servidor SSH (a cada servidor Linux)
 
 ```bash
 sudo apt update && sudo apt install -y openssh-server
@@ -97,7 +100,11 @@ sudo systemctl restart ssh
 ### 2.2 Connexió des dels clients
 
 ```bash
-ssh bchecker@172.29.99.233        # o: ssh bchecker@r-ncc.asix.local
+ssh bchecker@172.29.88.10         # Dockers-DMZ (Web/FTP)
+ssh bchecker@172.29.99.10         # Dockers-Intranet (DNS/Monitor)
+
+# La BBDD no és accessible des de la Intranet: s'hi entra passant pel servidor de la DMZ
+ssh -J bchecker@172.29.88.10 bchecker@172.29.89.10
 ```
 
 Des de Windows 10/11 es pot fer igual des de PowerShell (el client OpenSSH ve instal·lat).
@@ -107,7 +114,7 @@ Des de Windows 10/11 es pot fer igual des de PowerShell (el client OpenSSH ve in
 ```bash
 # Al client
 ssh-keygen -t ed25519 -C "admin@asix"
-ssh-copy-id bchecker@172.29.99.233
+ssh-copy-id bchecker@172.29.88.10
 ```
 
 > La clau SSH per autenticar el servidor contra **GitHub** es documenta a [git_workflow.md](git_workflow.md#2-autenticació-amb-clau-ssh).
@@ -127,8 +134,6 @@ Contenidor `richarvey/nginx-php-fpm` que serveix el contingut de `/var/www/html`
       - "443:443/tcp"
     volumes:
       - ./app:/var/www/html
-    depends_on:
-      - db
     restart: always
 ```
 
@@ -254,8 +259,14 @@ sudo docker exec -i B-NCC mysql -uroot -p < 02_load.sql
 Fitxer `src/bbdd/03_users.sql`:
 
 ```sql
+-- Usuari exigit per l'enunciat (administració)
 CREATE USER IF NOT EXISTS 'bchecker'@'%' IDENTIFIED BY 'bchecker121';
 GRANT ALL PRIVILEGES ON equipaments.* TO 'bchecker'@'%';
+
+-- Usuari de l'aplicació web: només lectura i només des del servidor de la DMZ
+CREATE USER IF NOT EXISTS 'webapp'@'172.29.89.1' IDENTIFIED BY 'canvia_aquesta_clau';
+GRANT SELECT ON equipaments.* TO 'webapp'@'172.29.89.1';
+
 FLUSH PRIVILEGES;
 ```
 
@@ -295,7 +306,7 @@ volumes:
 
 ## 5. DHCP
 
-El servidor DHCP s'executa a `R-NCC` i reparteix adreces a la **Intranet** (`enp3s0`). Els clients de proves mantenen IP fixa (`.11` i `.12`), fora del rang dinàmic.
+El servidor DHCP s'executa al router `R-NCC` i reparteix adreces a la **Intranet** (`enp3s0`). Els servidors tenen IP fixa per sota de `.100`, fora del rang dinàmic. La configuració equivalent per a Packet Tracer és a [arquitectura.md](arquitectura.md#8-configuració-del-router-a-packet-tracer).
 
 ```bash
 sudo apt install -y kea-dhcp4-server
@@ -316,8 +327,8 @@ Fitxer `/etc/kea/kea-dhcp4.conf`:
         "subnet": "172.29.99.0/24",
         "pools": [ { "pool": "172.29.99.100 - 172.29.99.200" } ],
         "option-data": [
-          { "name": "routers",             "data": "172.29.99.233" },
-          { "name": "domain-name-servers", "data": "172.29.88.10" },
+          { "name": "routers",             "data": "172.29.99.1" },
+          { "name": "domain-name-servers", "data": "172.29.99.10" },
           { "name": "domain-name",         "data": "asix.local" }
         ]
       }
@@ -386,15 +397,19 @@ $TTL 86400
         IN  NS  d-ncc.asix.local.
 
 ; Router
-r       IN  A   172.29.99.233
-r-ncc   IN  A   172.29.99.233
+r       IN  A   172.29.99.1
+r-ncc   IN  A   172.29.99.1
 
 ; Serveis (DMZ)
-s-ncc   IN  A   172.29.88.10
-d-ncc   IN  A   172.29.88.10
 w-ncc   IN  A   172.29.88.10
-b-ncc   IN  A   172.29.88.10
 f-ncc   IN  A   172.29.88.10
+
+; Serveis (Intranet)
+d-ncc   IN  A   172.29.99.10
+monitor IN  A   172.29.99.10
+
+; Base de dades (xarxa aïllada, només accessible des de la DMZ)
+b-ncc   IN  A   172.29.89.10
 www     IN  CNAME w-ncc
 ```
 
@@ -424,9 +439,9 @@ sudo docker compose restart dns
 Comprovació:
 
 ```bash
-dig @172.29.88.10 r.asix.local +short       # 172.29.99.233
-dig @172.29.88.10 r-ncc.asix.local +short   # 172.29.99.233
-nslookup r-ncc.asix.local 172.29.88.10      # també funciona a Windows
+dig @172.29.99.10 r.asix.local +short       # 172.29.99.1
+dig @172.29.99.10 r-ncc.asix.local +short   # 172.29.99.1
+nslookup r-ncc.asix.local 172.29.99.10      # també funciona a Windows
 ```
 
 ---
@@ -464,14 +479,14 @@ curl -u bchecker:bchecker121 ftp://172.29.88.10/
 
 ## 8. Aplicació web de consulta
 
-Petita aplicació PHP (a `src/app/`) que mostra el contingut de la taula `educacio`. Es connecta al contenidor `db` (nom del servei a Docker Compose) amb l'usuari `bchecker`.
+Petita aplicació PHP (a `src/app/`) que mostra el contingut de la taula `educacio`. Es connecta al servidor `B-NCC` (`172.29.89.10`) per la xarxa aïllada de la BBDD, amb l'usuari `webapp`, que només té permís de lectura.
 
 `src/app/index.php`:
 
 ```php
 <?php
-$pdo = new PDO('mysql:host=db;dbname=equipaments;charset=utf8mb4',
-               'bchecker', 'bchecker121',
+$pdo = new PDO('mysql:host=172.29.89.10;dbname=equipaments;charset=utf8mb4',
+               'webapp', getenv('DB_PASSWORD'),
                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
 $q = $_GET['q'] ?? '';
@@ -526,18 +541,20 @@ Accés: <http://w-ncc.asix.local> o <http://172.29.88.10>.
     restart: always
 ```
 
-1. Obre <http://172.29.88.10:3001>.
+El monitor s'executa a `Dockers-Intranet`, perquè des de la Intranet pot vigilar totes les xarxes.
+
+1. Obre <http://172.29.99.10:3001>.
 2. Crea l'usuari administrador **`bchecker` / `bchecker121`**.
 3. Afegeix els monitors:
 
 | Monitor | Tipus | Destí |
 | :--- | :--- | :--- |
-| Router | Ping | `172.29.99.233` |
+| Router | Ping | `172.29.99.1` |
 | Web | HTTP(s) | `http://172.29.88.10` |
-| DNS | DNS | `r-ncc.asix.local` @ `172.29.88.10` |
-| MySQL | TCP Port | `172.29.88.10:3306` |
+| DNS | DNS | `r-ncc.asix.local` @ `172.29.99.10` |
+| MySQL | HTTP(s) – paraula clau | `http://172.29.88.10` (si la web mostra dades, la BBDD respon) |
 | FTP | TCP Port | `172.29.88.10:21` |
-| SSH | TCP Port | `172.29.99.233:22` |
+| SSH | TCP Port | `172.29.88.10:22` |
 
 ---
 
