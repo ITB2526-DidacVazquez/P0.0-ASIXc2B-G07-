@@ -42,18 +42,29 @@ En la fase de **MVP (Sprint 1)**, la **VM Router / Servidor** allotja directamen
 
 ## 📂 Estructura de la Documentació
 
+| Document | Contingut |
+| :--- | :--- |
+| [01 · Estudi previ](docs/01-analisi/estudi_previ.md) | Requisits, planificació en sprints (ProofHub) i justificació tecnològica |
+| [02 · Arquitectura](docs/02-admin/arquitectura.md) | Diagrama de xarxa, inventari d'equips, adreçament IP i noms DNS |
+| [02 · Guia MVP Sprint 1](docs/02-admin/MVP_sprint1_infraestructura-config.md) | Creació de VMs, xarxa, enrutament i Docker pas a pas |
+| [02 · Serveis](docs/02-admin/serveis.md) | SSH, Web, BBDD + càrrega CSV, DHCP, DNS, FTP, app, monitor i NAT |
+| [02 · Flux de treball Git](docs/02-admin/git_workflow.md) | Clau SSH, ordres Git i pujada a producció |
+| [03 · Manual d'usuari](docs/03-client/manual_usuari.md) | Configuració dels clients i accés als serveis |
+| [04 · Pla de riscos](docs/04-prl/pla_riscos.md) | PRL, riscos tècnics i còpies de seguretat |
+| [05 · Pla de proves](docs/05-proves/test_plan.md) | Banc de proves i registre d'execució |
+
 ```text
 P0.0-ASIXc2B-G07/
 ├── README.md                      # Presentació i índex principal del projecte
 ├── docs/
-│   ├── 01-analisi/                # Estudi de mercat i justificació tecnològica (RA1)
+│   ├── 01-analisi/                # Estudi previ i justificació tecnològica (RA1)
 │   │   └── estudi_previ.md
 │   ├── 02-admin/                  # Manuals de configuració d'administrador (RA3, RA4)
 │   │   ├── arquitectura.md        # Diagrames de xarxa i taules d'IPs detallades
-│   │   ├── mvp_sprint1.md         # Documentació del MVP i configuració de xarxa/Docker
-│   │   ├── serveis.md             # Guia de serveis (DNS, Web, BBDD, FTP)
+│   │   ├── MVP_sprint1_infraestructura-config.md  # Guia de desplegament del MVP
+│   │   ├── serveis.md             # Guia de serveis (SSH, Web, BBDD, DHCP, DNS, FTP...)
 │   │   └── git_workflow.md        # Procediment i comandes del flux de treball Git
-│   ├── 03-client/                 # Manuals d'usuari i instal·lació de clients (RA3, RA4)
+│   ├── 03-client/                 # Manuals d'usuari i configuració de clients (RA3, RA4)
 │   │   └── manual_usuari.md
 │   ├── 04-prl/                    # Pla de Prevenció de Riscos Laborals i Tècnics (RA3)
 │   │   └── pla_riscos.md
@@ -61,6 +72,8 @@ P0.0-ASIXc2B-G07/
 │       └── test_plan.md
 └── src/                           # Codi font del projecte
     ├── docker-compose.yml         # Fitxer de desplegament dels contenidors Docker
+    ├── .env.example               # Variables d'entorn necessàries (sense valors reals)
     ├── bbdd/                      # Scripts d'estructura i càrrega de dades SQL
+    ├── dns/                       # named.conf i fitxer de zona asix.local
     ├── app/                       # Codi de l'aplicació Web
     └── scripts/                   # Scripts d'automatització
