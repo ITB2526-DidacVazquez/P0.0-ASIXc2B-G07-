@@ -21,10 +21,10 @@
 | :--- | :--- | :--- | :-: |
 | ProofHub | Assignació de tasques | Tauler del ProofHub + [proofhub.md](proofhub.md#4-sprint-1) | ⚠️ Falta posar els responsables al Markdown |
 | ProofHub | Foto de tasques a l'inici i al final del sprint | [proofhub.md](proofhub.md#fotos-del-tauler) | ✅ Inici, seguiment i final |
-| ProofHub | *(...)* Seguiment i retrospectiva | [proofhub.md](proofhub.md#4-sprint-1) | ⚠️ Falta la retrospectiva |
+| ProofHub | *(...)* Seguiment, reunions i retrospectiva | [proofhub.md](proofhub.md#reunions) | ⚠️ Falta la retrospectiva i la data de la reunió |
 | GitHub | Documentació: preparació de l'entorn | [Guia del MVP §2–3](../02-admin/MVP_sprint1_infraestructura-config.md#2-creació-de-màquines-virtuals-isardvdi) | ✅ |
 | GitHub | Documentació: instal·lacions | [Guia del MVP §4](../02-admin/MVP_sprint1_infraestructura-config.md#40-installació-de-docker) · [serveis.md](../02-admin/serveis.md) | ✅ |
-| GitHub | Mapa de l'arquitectura | [arquitectura.md §1](../02-admin/arquitectura.md#1-mapa-de-xarxa) | ⚠️ Falta la imatge en gran |
+| GitHub | Mapa de l'arquitectura | [arquitectura.md §1](../02-admin/arquitectura.md#1-mapa-de-xarxa) | ✅ |
 | GitHub | Justificació de decisions | [arquitectura.md §7](../02-admin/arquitectura.md#7-justificació-de-les-decisions) | ✅ |
 
 ✅ fet · ⚠️ falta alguna cosa
@@ -124,7 +124,8 @@ Ja està documentat a la [guia del MVP](../02-admin/MVP_sprint1_infraestructura-
 
 ### 3.3 Què falta
 
-- [ ] **Captures de les proves** del MVP (`ping`, `curl`, `dig`, login FTP, consulta MySQL) a [`docs/05-proves/img/`](../05-proves/img/). Són la prova que tot això es va fer de debò.
+- [x] **Captures de les proves** del MVP a la [guia del MVP §5](../02-admin/MVP_sprint1_infraestructura-config.md#5-proves-realitzades): `docker ps`, `dig`, `ping` i web des dels dos clients.
+- [ ] Falten les captures de l'**FTP** (login amb `bchecker`) i del **DNS des d'un client** (`dig @172.29.88.10 s-ncc.asix.local`).
 - [ ] Revisar que el que diu la guia del MVP coincideix amb el que es va fer. Si algun pas es va fer diferent, corregiu-lo.
 
 ---
@@ -135,7 +136,8 @@ Ja està documentat a la [guia del MVP](../02-admin/MVP_sprint1_infraestructura-
 
 - [x] Diagrama de Packet Tracer a [arquitectura.md](../02-admin/arquitectura.md#1-mapa-de-xarxa) i al README.
 - [x] Taula d'adreçament IP, inventari d'equips i noms DNS.
-- [ ] **Substituir la imatge petita per la gran:** pugeu-la a `docs/img/` amb el nom exacte **`arquitectura_xarxa.png`**. No cal canviar res més, perquè el README i `arquitectura.md` ja apunten a aquest nom.
+- [x] Imatge en gran del mapa de xarxa.
+- [ ] Afegir al Packet Tracer les IPs de la xarxa de la BBDD (proposta: `172.29.89.0/24`, servidor DMZ `.1`, MySQL `.10`).
 - [ ] *(Opcional)* Pujar també el fitxer de Packet Tracer (`.pkt`) a `docs/img/`, perquè el professor el pugui obrir.
 
 ### 4.2 Justificació de decisions
@@ -187,8 +189,9 @@ Proposta. Ajusteu-la segons qui ha fet cada tasca al ProofHub:
 | :--- | :--- | :-: |
 | Posar responsables, dates i hores a totes les tasques del ProofHub | Gerard | 20 min |
 | Copiar els responsables a [proofhub.md](proofhub.md#4-sprint-1) | Gerard | 10 min |
-| Pujar el diagrama gran (i el `.pkt`) | Dídac | 5 min |
-| Pujar les captures de les proves del MVP | Dídac | 15 min |
+| Pujar el fitxer `.pkt` i afegir les IPs de la xarxa BBDD | Dídac | 10 min |
+| Captures de l'FTP i del DNS des d'un client | Dídac | 10 min |
+| Posar data i acords de la reunió a [proofhub.md](proofhub.md#reunions) | Gerard | 5 min |
 | Foto final del tauler l'últim dia del sprint | Liam | 5 min |
 | Retrospectiva (entre tots) i escriure-la a [proofhub.md](proofhub.md#4-sprint-1) | Tots | 15 min |
 | Llegir la justificació de l'arquitectura i assajar les preguntes | Tots | 15 min |

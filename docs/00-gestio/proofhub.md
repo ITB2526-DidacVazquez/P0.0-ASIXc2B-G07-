@@ -22,6 +22,7 @@
 | **GitHub** | Documentació, fitxers de configuració i historial de canvis |
 | **Packet Tracer / draw.io** | Disseny del mapa de xarxa abans de muntar-lo |
 | **IsardVDI** | Màquines virtuals on despleguem la infraestructura real |
+| **Google Meet** | Reunions de seguiment quan no coincidim a classe |
 
 **Dinàmica:**
 
@@ -93,6 +94,16 @@ Treballem amb la **vista de tauler** (*Vista de tablón*) de *Tareas*, organitza
 **Final del sprint:** 5 tasques acabades. La plantilla de VM continua en curs i passa al sprint següent.
 
 ![Sprint 1 · final](img/sprint1-final.png)
+
+### Reunions
+
+**Reunió de seguiment** per videotrucada (Google Meet), amb els tres membres de l'equip: revisió de l'estat del MVP i repartiment de les tasques pendents.
+
+<img src="img/reunio-sprint1.jpg" alt="Reunió de seguiment del Sprint 1" width="300">
+
+| Data | Assistents | Temes | Acords |
+| :--- | :--- | :--- | :--- |
+| | Dídac, Gerard, Liam | Estat del MVP i proves des dels clients | |
 
 **Retrospectiva:**
 
