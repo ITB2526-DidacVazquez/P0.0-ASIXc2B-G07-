@@ -326,7 +326,7 @@ dig @172.29.99.10 r-ncc.asix.local +short   # 172.29.99.1
 nslookup r-ncc.asix.local 172.29.99.10      # també funciona a Windows
 ```
 
-> Si el contenidor no arrenca per *"address already in use"*, és `systemd-resolved` ocupant el port 53. Vegeu la solució a la [guia del MVP](MVP_sprint1_infraestructura-config.md#port-53-ocupat-a-ubuntu).
+> Si el contenidor no arrenca per *"address already in use"*, és `systemd-resolved` ocupant el port 53. Vegeu la solució a la [guia del MVP](MVP_sprint1_infraestructura-config.md#46-port-53-ocupat-a-ubuntu).
 
 ---
 
