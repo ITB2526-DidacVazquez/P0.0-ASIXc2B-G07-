@@ -1,12 +1,13 @@
 # ⚙️ Guia de serveis
 
 > Configuració de cada servei de la infraestructura.
+> Fitxers de configuració: carpeta [`src/`](../../src/) ([com es despleguen](#01-desplegament-amb-docker-compose)).
 > Prerequisit: xarxa i Docker configurats segons [MVP_sprint1_infraestructura-config.md](MVP_sprint1_infraestructura-config.md).
 > On va cada servei i per què: [arquitectura.md](arquitectura.md).
 
 ## Índex
 
-0. [Estat dels serveis](#0-estat-dels-serveis)
+0. [Estat dels serveis i desplegament](#0-estat-dels-serveis)
 1. [Usuari comú `bchecker`](#1-usuari-comú-bchecker)
 2. [SSH](#2-ssh)
 3. [Servidor web (`W-NCC`)](#3-servidor-web-w-ncc)
@@ -37,6 +38,42 @@
 
 ✅ desplegat · ⏳ pendent
 
+### 0.1 Desplegament amb Docker Compose
+
+Tots els fitxers de configuració són a la carpeta [`src/`](../../src/) del repositori. Hi ha **un sol `docker-compose.yml`**, i cada servei té un **perfil** segons el servidor on s'executa:
+
+| Perfil | Servidor | Serveis |
+| :--- | :--- | :--- |
+| `dmz` | `Dockers-DMZ` | `W-NCC` (Web), `F-NCC` (FTP) |
+| `bbdd` | `Docker-B-NCC` | `B-NCC` (MySQL) |
+| `intranet` | `Dockers-Intranet` | `D-NCC` (DNS), `M-NCC` (Monitor) |
+
+Així el mateix fitxer serveix per al **MVP** (tots els perfils a la mateixa VM) i per a l'**arquitectura final** (cada servidor arrenca només el seu perfil).
+
+```bash
+git clone git@github.com:ITB2526-DidacVazquez/P0.0-ASIXc2B-G07-.git
+cd P0.0-ASIXc2B-G07-/src
+
+cp .env.example .env          # i editar-lo: contrasenyes i COMPOSE_PROFILES
+nano .env
+
+sudo docker compose up -d     # arrenca només els perfils indicats a COMPOSE_PROFILES
+sudo docker compose ps
+```
+
+Valors del `.env` per a cada cas:
+
+| Variable | MVP (una sola VM) | `Dockers-DMZ` | `Docker-B-NCC` | `Dockers-Intranet` |
+| :--- | :--- | :--- | :--- | :--- |
+| `COMPOSE_PROFILES` | `dmz,bbdd,intranet` | `dmz` | `bbdd` | `intranet` |
+| `WEBAPP_HOST` | `%` | — | `172.29.89.1` | — |
+| `DB_BIND_IP` | `127.0.0.1` | — | `172.29.89.10` | — |
+| `FTP_ADDRESS` | `172.29.88.10` | `172.29.88.10` | — | — |
+
+> ℹ️ Docker Compose llegeix tot el fitxer encara que un servei no s'arrenqui. Per això, als servidors sense BBDD apareix un avís (*"The MYSQL_ROOT_PASSWORD variable is not set"*). No és cap error.
+
+> 🔐 El fitxer `.env` i `app/config.php` contenen contrasenyes i **no es pugen a GitHub** (estan al `src/.gitignore`). Al repositori només hi ha les plantilles `.env.example` i `app/config.example.php`.
+
 ---
 
 ## 1. Usuari comú `bchecker`
@@ -51,7 +88,7 @@ L'enunciat exigeix que **tots els sistemes i aplicacions** tinguin l'usuari:
 | :--- | :--- |
 | Servidors Linux i `Client-Lin` | `useradd` (vegeu a sota) |
 | `Client-Win` (Windows) | `New-LocalUser` (vegeu a sota) |
-| MySQL (`B-NCC`) | [secció 4.3](#43-usuari-bchecker-a-mysql) |
+| MySQL (`B-NCC`) | script `02-usuaris.sh` ([secció 4.3](#43-usuaris-de-mysql)) |
 | FTP (`F-NCC`) | variable `USERS` del contenidor ([secció 7](#7-ftp-f-ncc)) |
 | Monitor de xarxa | usuari administrador creat al primer accés ([secció 9](#9-monitor-de-xarxa)) |
 
@@ -123,19 +160,7 @@ ssh-copy-id bchecker@172.29.88.10
 
 ## 3. Servidor web (`W-NCC`)
 
-Contenidor `richarvey/nginx-php-fpm` que serveix el contingut de `/var/www/html`. Per poder versionar l'aplicació, es munta el directori `src/app` del repositori:
-
-```yaml
-  web:
-    image: richarvey/nginx-php-fpm:latest
-    container_name: W-NCC
-    ports:
-      - "80:80/tcp"
-      - "443:443/tcp"
-    volumes:
-      - ./app:/var/www/html
-    restart: always
-```
+Servei `web` del perfil `dmz`. Fa servir la imatge `richarvey/nginx-php-fpm` i serveix la carpeta [`src/app/`](../../src/app/), que es munta a `/var/www/html`. Així, qualsevol canvi a l'aplicació que arriba amb `git pull` es veu a l'instant.
 
 Comprovació:
 
@@ -148,6 +173,8 @@ curl -I http://w-ncc.asix.local
 
 ## 4. Base de dades (`B-NCC`)
 
+Servei `db` del perfil `bbdd` (imatge `mysql:8.0`).
+
 ### 4.1 Dades d'origen
 
 **Llistat d'equipaments d'educació de la ciutat de Barcelona** (Open Data BCN):
@@ -155,152 +182,67 @@ curl -I http://w-ncc.asix.local
 - Fitxa: <https://opendata-ajuntament.barcelona.cat/data/es/dataset/equipament-educacio/resource/29d9ff10-6892-4f16-9012-d5c4997857e7>
 - Descàrrega directa (CSV): <https://opendata-ajuntament.barcelona.cat/data/dataset/f36b60f2-9541-4d08-b0f9-b0a9313fab3d/resource/29d9ff10-6892-4f16-9012-d5c4997857e7/download>
 
-```bash
-mkdir -p src/bbdd && cd src/bbdd
-wget -O equipaments_educacio.csv \
-  "https://opendata-ajuntament.barcelona.cat/data/dataset/f36b60f2-9541-4d08-b0f9-b0a9313fab3d/resource/29d9ff10-6892-4f16-9012-d5c4997857e7/download"
-
-file equipaments_educacio.csv     # comprova la codificació
-head -1 equipaments_educacio.csv  # comprova les columnes
-```
-
-> ⚠️ Alguns CSV de l'Open Data BCN venen en **UTF-16**. Si `file` no diu `UTF-8`, converteix-lo:
-> `iconv -f UTF-16 -t UTF-8 equipaments_educacio.csv > equipaments_utf8.csv`
-
-### 4.2 Creació de la BBDD i càrrega
-
-Fitxer `src/bbdd/01_schema.sql`:
-
-```sql
-CREATE DATABASE IF NOT EXISTS equipaments
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE equipaments;
-
--- Una columna per cada camp del CSV, en el mateix ordre.
--- Si la capçalera del CSV (head -1) no coincideix, cal ajustar aquesta llista.
-CREATE TABLE IF NOT EXISTS educacio (
-  id                             INT AUTO_INCREMENT PRIMARY KEY,
-  register_id                    VARCHAR(50),
-  name                           VARCHAR(255),
-  institution_id                 VARCHAR(50),
-  institution_name               VARCHAR(255),
-  created                        VARCHAR(50),
-  modified                       VARCHAR(50),
-  addresses_roadtype_id          VARCHAR(50),
-  addresses_roadtype_name        VARCHAR(100),
-  addresses_road_id              VARCHAR(50),
-  addresses_road_name            VARCHAR(255),
-  addresses_start_street_number  VARCHAR(20),
-  addresses_end_street_number    VARCHAR(20),
-  addresses_neighborhood_id      VARCHAR(20),
-  addresses_neighborhood_name    VARCHAR(100),
-  addresses_district_id          VARCHAR(20),
-  addresses_district_name        VARCHAR(100),
-  addresses_zip_code             VARCHAR(10),
-  addresses_town                 VARCHAR(100),
-  addresses_main_address         VARCHAR(10),
-  addresses_type                 VARCHAR(100),
-  values_id                      VARCHAR(50),
-  values_attribute_id            VARCHAR(50),
-  values_category                VARCHAR(100),
-  values_attribute_name          VARCHAR(255),
-  values_value                   VARCHAR(255),
-  values_outstanding             VARCHAR(10),
-  values_description             TEXT,
-  secondary_filters_id           VARCHAR(50),
-  secondary_filters_name         VARCHAR(255),
-  secondary_filters_fullpath     VARCHAR(500),
-  secondary_filters_tree         VARCHAR(50),
-  secondary_filters_asia_id      VARCHAR(50),
-  geo_epgs_25831_x               VARCHAR(30),
-  geo_epgs_25831_y               VARCHAR(30),
-  geo_epgs_4326_lat              VARCHAR(30),
-  geo_epgs_4326_lon              VARCHAR(30)
-);
-```
-
-Fitxer `src/bbdd/02_load.sql`:
-
-```sql
-USE equipaments;
-
-LOAD DATA INFILE '/var/lib/mysql-files/equipaments_educacio.csv'
-INTO TABLE educacio
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 LINES
-(register_id, name, institution_id, institution_name, created, modified,
- addresses_roadtype_id, addresses_roadtype_name, addresses_road_id, addresses_road_name,
- addresses_start_street_number, addresses_end_street_number,
- addresses_neighborhood_id, addresses_neighborhood_name,
- addresses_district_id, addresses_district_name, addresses_zip_code, addresses_town,
- addresses_main_address, addresses_type,
- values_id, values_attribute_id, values_category, values_attribute_name,
- values_value, values_outstanding, values_description,
- secondary_filters_id, secondary_filters_name, secondary_filters_fullpath,
- secondary_filters_tree, secondary_filters_asia_id,
- geo_epgs_25831_x, geo_epgs_25831_y, geo_epgs_4326_lat, geo_epgs_4326_lon);
-```
-
-Execució (la imatge `mysql:8.0` només permet `LOAD DATA INFILE` des de `/var/lib/mysql-files/`):
+L'script [`src/scripts/descarregar_csv.sh`](../../src/scripts/descarregar_csv.sh) el descarrega a `src/bbdd/csv/`, el passa a UTF-8 si cal, treu els finals de línia de Windows i mostra la capçalera:
 
 ```bash
-cd src/bbdd
-sudo docker cp equipaments_educacio.csv B-NCC:/var/lib/mysql-files/
-sudo docker exec -i B-NCC mysql -uroot -p < 01_schema.sql
-sudo docker exec -i B-NCC mysql -uroot -p < 02_load.sql
+bash src/scripts/descarregar_csv.sh
 ```
 
-> Si el CSV té finals de línia de Windows, canvia `LINES TERMINATED BY '\n'` per `'\r\n'`.
+> ⚠️ Comprova que la capçalera que mostra l'script coincideix amb les columnes de [`01-esquema.sql`](../../src/bbdd/init/01-esquema.sql). Si no, cal ajustar la taula i la llista de columnes de `03-carrega.sh`.
 
-### 4.3 Usuari `bchecker` a MySQL
+### 4.2 Creació automàtica de la BBDD
 
-Fitxer `src/bbdd/03_users.sql`:
+La primera vegada que arrenca, MySQL executa per ordre els scripts de [`src/bbdd/init/`](../../src/bbdd/init/):
 
-```sql
--- Usuari exigit per l'enunciat (administració)
-CREATE USER IF NOT EXISTS 'bchecker'@'%' IDENTIFIED BY 'bchecker121';
-GRANT ALL PRIVILEGES ON equipaments.* TO 'bchecker'@'%';
+| Fitxer | Què fa |
+| :--- | :--- |
+| `01-esquema.sql` | Crea la BBDD `equipaments` i la taula `educacio` |
+| `02-usuaris.sh` | Crea els usuaris `bchecker` i `webapp` (llegeix les contrasenyes del `.env`) |
+| `03-carrega.sh` | Carrega el CSV. Si no hi és, avisa però deixa arrencar MySQL |
 
--- Usuari de l'aplicació web: només lectura i només des del servidor de la DMZ
-CREATE USER IF NOT EXISTS 'webapp'@'172.29.89.1' IDENTIFIED BY 'canvia_aquesta_clau';
-GRANT SELECT ON equipaments.* TO 'webapp'@'172.29.89.1';
+El CSV es munta a `/var/lib/mysql-files/`, que és l'única carpeta des d'on MySQL 8 permet importar fitxers (`secure_file_priv`).
 
-FLUSH PRIVILEGES;
-```
+> ⚠️ **Aquests scripts només s'executen si `src/bbdd/data/` està buida.** Si MySQL ja s'havia arrencat abans, cal esborrar les dades per tornar-los a executar:
+>
+> ```bash
+> sudo docker compose down
+> sudo rm -rf bbdd/data
+> sudo docker compose up -d
+> sudo docker logs B-NCC | grep -i "csv"     # ha de dir: CSV carregat: N files.
+> ```
+
+**Carregar el CSV més tard** (si MySQL ja estava en marxa sense CSV):
 
 ```bash
-sudo docker exec -i B-NCC mysql -uroot -p < 03_users.sql
+bash src/scripts/descarregar_csv.sh
+sudo docker exec B-NCC bash /docker-entrypoint-initdb.d/03-carrega.sh
 ```
+
+> Si la taula ja tenia dades, abans buida-la per no duplicar files: `TRUNCATE TABLE equipaments.educacio;`
+
+### 4.3 Usuaris de MySQL
+
+| Usuari | Contrasenya | Des d'on | Permisos | Per a què |
+| :--- | :--- | :--- | :--- | :--- |
+| `bchecker` | `bchecker121` | Qualsevol | Tots sobre `equipaments` | Exigit per l'enunciat (administració i correcció) |
+| `webapp` | `WEBAPP_PASSWORD` del `.env` | `WEBAPP_HOST` (`172.29.89.1` a l'arquitectura final) | Només `SELECT` | L'aplicació web |
+
+L'usuari `webapp` només pot llegir: si algú ataqués la web, no podria esborrar ni modificar dades. Vegeu la [justificació a l'arquitectura](arquitectura.md#74-la-base-de-dades-en-una-xarxa-a-part).
 
 ### 4.4 Comprovació
 
 ```bash
-sudo docker exec -it B-NCC mysql -ubchecker -pbchecker121 -e \
+sudo docker exec -it B-NCC mysql -ubchecker -pbchecker121 --default-character-set=utf8mb4 -e \
   "SELECT COUNT(*) FROM equipaments.educacio;
    SELECT name, addresses_district_name FROM equipaments.educacio LIMIT 5;"
 ```
 
-### 4.5 Persistència
+> Sense `--default-character-set=utf8mb4`, la terminal pot mostrar els accents malament (`Gr�cia`), encara que a la BBDD estiguin bé.
 
-Per no perdre les dades si es recrea el contenidor, afegeix un volum al `docker-compose.yml`:
+### 4.5 Persistència i port
 
-```yaml
-  db:
-    image: mysql:8.0
-    container_name: B-NCC
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    ports:
-      - "3306:3306/tcp"
-    volumes:
-      - db_data:/var/lib/mysql
-    restart: always
-
-volumes:
-  db_data:
-```
+- Les dades es guarden a `src/bbdd/data/` (ignorada per Git), així que no es perden si es recrea el contenidor.
+- El port 3306 només s'obre a la IP de `DB_BIND_IP`: `127.0.0.1` al MVP (només la mateixa VM) i `172.29.89.10` a l'arquitectura final (només la xarxa aïllada).
 
 ---
 
@@ -357,84 +299,24 @@ ipconfig /release; ipconfig /renew   # Windows
 
 ## 6. DNS (`D-NCC`)
 
-BIND9 actua com a servidor **autoritatiu** de la zona `asix.local` i **reenvia** la resta de consultes. L'enunciat exigeix que resolgui `R-NCC` i `R` (el router).
+Servei `dns` del perfil `intranet` (imatge `internetsystemsconsortium/bind9:9.18`). BIND9 és **autoritatiu** de la zona `asix.local` i **reenvia** la resta de consultes a DNS públics. L'enunciat exigeix que resolgui `R-NCC` i `R` (el router).
 
-Estructura al repositori:
+| Fitxer | Es munta a | Contingut |
+| :--- | :--- | :--- |
+| [`src/dns/config/named.conf`](../../src/dns/config/named.conf) | `/etc/bind/named.conf` | Opcions, *forwarders* i declaració de la zona |
+| [`src/dns/zones/db.asix.local`](../../src/dns/zones/db.asix.local) | `/var/lib/bind/db.asix.local` | Registres de la zona (`r`, `r-ncc`, `w-ncc`...) |
 
-```text
-src/dns/
-├── named.conf
-└── db.asix.local
-```
+> ⚠️ La carpeta `src/dns/config` substitueix **tota** la carpeta `/etc/bind` de la imatge. Per això `named.conf` no inclou cap altre fitxer: ha de funcionar sol. Si la carpeta estigués buida, BIND9 no arrencaria.
 
-`src/dns/named.conf`:
+> 🔁 Cada vegada que es modifica la zona cal **incrementar el serial** i reiniciar: `sudo docker compose restart dns`.
 
-```text
-options {
-    directory "/var/cache/bind";
-    recursion yes;
-    allow-query { any; };
-    forwarders { 8.8.8.8; 1.1.1.1; };
-    listen-on { any; };
-};
-
-zone "asix.local" {
-    type master;
-    file "/etc/bind/db.asix.local";
-};
-```
-
-`src/dns/db.asix.local`:
-
-```text
-$TTL 86400
-@       IN  SOA d-ncc.asix.local. admin.asix.local. (
-            2025102101 ; serial (AAAAMMDDnn)
-            3600       ; refresh
-            1800       ; retry
-            604800     ; expire
-            86400 )    ; minimum
-        IN  NS  d-ncc.asix.local.
-
-; Router
-r       IN  A   172.29.99.1
-r-ncc   IN  A   172.29.99.1
-
-; Serveis (DMZ)
-w-ncc   IN  A   172.29.88.10
-f-ncc   IN  A   172.29.88.10
-
-; Serveis (Intranet)
-d-ncc   IN  A   172.29.99.10
-monitor IN  A   172.29.99.10
-
-; Base de dades (xarxa aïllada, només accessible des de la DMZ)
-b-ncc   IN  A   172.29.89.10
-www     IN  CNAME w-ncc
-```
-
-Muntatge al `docker-compose.yml`:
-
-```yaml
-  dns:
-    image: internetsystemsconsortium/bind9:9.18
-    container_name: D-NCC
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-    volumes:
-      - ./dns/named.conf:/etc/bind/named.conf:ro
-      - ./dns/db.asix.local:/etc/bind/db.asix.local:ro
-    restart: always
-```
+Validar la configuració abans d'arrencar:
 
 ```bash
-sudo docker exec D-NCC named-checkconf /etc/bind/named.conf
-sudo docker exec D-NCC named-checkzone asix.local /etc/bind/db.asix.local
-sudo docker compose restart dns
+sudo docker run --rm -v $PWD/dns/config:/etc/bind:ro -v $PWD/dns/zones:/var/lib/bind:ro \
+  --entrypoint sh internetsystemsconsortium/bind9:9.18 \
+  -c 'named-checkconf /etc/bind/named.conf && named-checkzone asix.local /var/lib/bind/db.asix.local'
 ```
-
-> 🔁 Cada vegada que es modifica la zona cal **incrementar el serial**.
 
 Comprovació:
 
@@ -444,83 +326,45 @@ dig @172.29.99.10 r-ncc.asix.local +short   # 172.29.99.1
 nslookup r-ncc.asix.local 172.29.99.10      # també funciona a Windows
 ```
 
+> Si el contenidor no arrenca per *"address already in use"*, és `systemd-resolved` ocupant el port 53. Vegeu la solució a la [guia del MVP](MVP_sprint1_infraestructura-config.md#46-port-53-ocupat-a-ubuntu).
+
 ---
 
 ## 7. FTP (`F-NCC`)
 
-Contenidor `delfer/alpine-ftp-server` (vsftpd). Els usuaris es defineixen amb la variable `USERS` (`usuari|contrasenya`) i `ADDRESS` indica la IP anunciada en mode passiu.
+Servei `ftp` del perfil `dmz` (imatge `delfer/alpine-ftp-server`, basada en vsftpd).
 
-```yaml
-  ftp:
-    image: delfer/alpine-ftp-server:latest
-    container_name: F-NCC
-    environment:
-      USERS: "bchecker|bchecker121"
-      ADDRESS: "172.29.88.10"
-      MIN_PORT: "21000"
-      MAX_PORT: "21010"
-    ports:
-      - "21:21/tcp"
-      - "21000-21010:21000-21010/tcp"
-    volumes:
-      - ftp_data:/ftp
-    restart: always
-```
+- **Usuari:** `bchecker` / `bchecker121` (variable `USERS`).
+- **Mode passiu:** ports `21000-21010`. La variable `ADDRESS` (`FTP_ADDRESS` al `.env`) indica la IP que s'anuncia als clients. Sense ella, el mode passiu falla.
+- **Carpeta:** `src/ftp/`, **separada de la web**. Així, qui entri per FTP no pot modificar ni esborrar l'aplicació.
 
-Comprovació:
+Comprovació (prova real, no només el port):
 
 ```bash
-ftp 172.29.88.10          # usuari: bchecker / bchecker121
-# o bé
-curl -u bchecker:bchecker121 ftp://172.29.88.10/
+curl -u bchecker:bchecker121 ftp://172.29.88.10/                     # llistar
+echo prova > prova.txt
+curl -T prova.txt -u bchecker:bchecker121 ftp://172.29.88.10/        # pujar
+curl -u bchecker:bchecker121 ftp://172.29.88.10/prova.txt            # baixar
 ```
 
 ---
 
 ## 8. Aplicació web de consulta
 
-Petita aplicació PHP (a `src/app/`) que mostra el contingut de la taula `educacio`. Es connecta al servidor `B-NCC` (`172.29.89.10`) per la xarxa aïllada de la BBDD, amb l'usuari `webapp`, que només té permís de lectura.
+Aplicació PHP a [`src/app/index.php`](../../src/app/index.php) que mostra els equipaments d'educació, amb cerca per nom i filtre per districte. Fa servir **consultes preparades** (PDO) per evitar la injecció SQL.
 
-`src/app/index.php`:
+Es connecta amb l'usuari `webapp` (només lectura). Les dades de connexió són a `src/app/config.php`, que no es puja a GitHub:
 
-```php
-<?php
-$pdo = new PDO('mysql:host=172.29.89.10;dbname=equipaments;charset=utf8mb4',
-               'webapp', getenv('DB_PASSWORD'),
-               [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-
-$q = $_GET['q'] ?? '';
-$stmt = $pdo->prepare(
-  "SELECT name, addresses_road_name, addresses_start_street_number,
-          addresses_district_name, values_value
-     FROM educacio
-    WHERE name LIKE :q
-    ORDER BY name
-    LIMIT 200");
-$stmt->execute([':q' => "%$q%"]);
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
-<!doctype html>
-<html lang="ca">
-<head><meta charset="utf-8"><title>Equipaments d'educació BCN</title></head>
-<body>
-  <h1>Equipaments d'educació de Barcelona</h1>
-  <form><input name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Cerca per nom">
-        <button>Cercar</button></form>
-  <table border="1" cellpadding="4">
-    <tr><th>Nom</th><th>Adreça</th><th>Districte</th><th>Contacte</th></tr>
-    <?php foreach ($rows as $r): ?>
-    <tr>
-      <td><?= htmlspecialchars($r['name']) ?></td>
-      <td><?= htmlspecialchars($r['addresses_road_name'].' '.$r['addresses_start_street_number']) ?></td>
-      <td><?= htmlspecialchars($r['addresses_district_name']) ?></td>
-      <td><?= htmlspecialchars($r['values_value']) ?></td>
-    </tr>
-    <?php endforeach; ?>
-  </table>
-</body>
-</html>
+```bash
+cd src/app
+cp config.example.php config.php
+nano config.php
 ```
+
+| Camp | MVP | Arquitectura final |
+| :--- | :--- | :--- |
+| `host` | `db` (nom del servei a Docker Compose) | `172.29.89.10` (B-NCC per la xarxa aïllada) |
+| `password` | El mateix valor que `WEBAPP_PASSWORD` del `.env` | El mateix |
 
 Accés: <http://w-ncc.asix.local> o <http://172.29.88.10>.
 
@@ -528,18 +372,7 @@ Accés: <http://w-ncc.asix.local> o <http://172.29.88.10>.
 
 ## 9. Monitor de xarxa
 
-**Uptime Kuma** permet vigilar l'estat de tots els serveis (ping, HTTP, DNS, ports TCP) des d'una interfície web.
-
-```yaml
-  monitor:
-    image: louislam/uptime-kuma:1
-    container_name: M-NCC
-    ports:
-      - "3001:3001/tcp"
-    volumes:
-      - monitor_data:/app/data
-    restart: always
-```
+**Uptime Kuma** (servei `monitor` del perfil `intranet`) vigila l'estat de tots els serveis (ping, HTTP, DNS, ports TCP) des d'una interfície web. Les seves dades es guarden a `src/monitor/data/`.
 
 El monitor s'executa a `Dockers-Intranet`, perquè des de la Intranet pot vigilar totes les xarxes.
 
@@ -552,9 +385,11 @@ El monitor s'executa a `Dockers-Intranet`, perquè des de la Intranet pot vigila
 | Router | Ping | `172.29.99.1` |
 | Web | HTTP(s) | `http://172.29.88.10` |
 | DNS | DNS | `r-ncc.asix.local` @ `172.29.99.10` |
-| MySQL | HTTP(s) – paraula clau | `http://172.29.88.10` (si la web mostra dades, la BBDD respon) |
+| BBDD (indirecte) | HTTP(s) – paraula clau | `http://172.29.88.10`, paraula `equipaments a la base de dades` (si la web mostra dades, la BBDD respon) |
 | FTP | TCP Port | `172.29.88.10:21` |
 | SSH | TCP Port | `172.29.88.10:22` |
+
+> La BBDD no es pot vigilar directament: està en una xarxa aïllada i des de la Intranet no hi ha cap ruta.
 
 ---
 

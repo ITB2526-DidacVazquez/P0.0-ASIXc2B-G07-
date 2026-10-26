@@ -29,7 +29,7 @@ Normativa de referència: **Llei 31/1995** de Prevenció de Riscos Laborals i **
 | # | Risc | Impacte | Mesures preventives |
 | :-: | :--- | :--- | :--- |
 | T1 | Pèrdua de la configuració d'una VM | Alt | Tota la configuració versionada a Git; documentació pas a pas a `docs/02-admin/` |
-| T2 | Pèrdua de les dades de MySQL en recrear el contenidor | Alt | Volum persistent `db_data`; còpies amb `mysqldump` |
+| T2 | Pèrdua de les dades de MySQL en recrear el contenidor | Alt | Dades a `src/bbdd/data/` (volum persistent); còpies amb `mysqldump` |
 | T3 | Filtració de credencials al repositori | Alt | Fitxer `.env` fora de Git (`.gitignore`); no guardar *tokens* ni claus privades |
 | T4 | Conflicte d'adreces IP | Mitjà | Taula d'adreçament única a `arquitectura.md`; rang DHCP separat de les IPs fixes |
 | T5 | Servei DNS no arrenca (port 53 ocupat) | Mitjà | Desactivar el *stub listener* de `systemd-resolved` |

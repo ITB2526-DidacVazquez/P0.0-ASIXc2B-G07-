@@ -74,13 +74,23 @@ P0.0-ASIXc2B-G07/
 │   │   └── pla_riscos.md
 │   └── 05-proves/                 # Pla de qualitat i banc de proves (RA2)
 │       └── test_plan.md
-└── src/                           # Codi font del projecte
-    ├── docker-compose.yml         # Fitxer de desplegament dels contenidors Docker
-    ├── .env.example               # Variables d'entorn necessàries (sense valors reals)
-    ├── bbdd/                      # Scripts d'estructura i càrrega de dades SQL
-    ├── dns/                       # named.conf i fitxer de zona asix.local
-    ├── app/                       # Codi de l'aplicació Web
-    └── scripts/                   # Scripts d'automatització
+└── src/                           # Fitxers de desplegament (vegeu docs/02-admin/serveis.md)
+    ├── docker-compose.yml         # Tots els serveis, amb perfils: dmz, bbdd, intranet
+    ├── .env.example               # Plantilla de variables (contrasenyes, perfils)
+    ├── .gitignore                 # .env, config.php i dades dels contenidors
+    ├── app/
+    │   ├── index.php              # Aplicació de consulta dels equipaments
+    │   └── config.example.php     # Plantilla de connexió a la BBDD
+    ├── bbdd/
+    │   ├── init/                  # 01-esquema.sql, 02-usuaris.sh, 03-carrega.sh
+    │   ├── csv/                   # CSV d'equipaments (es descarrega amb l'script)
+    │   └── data/                  # Dades de MySQL (ignorada per Git)
+    ├── dns/
+    │   ├── config/named.conf      # Configuració de BIND9
+    │   └── zones/db.asix.local    # Zona asix.local (R, R-NCC...)
+    ├── ftp/                       # Carpeta de l'usuari FTP (separada de la web)
+    └── scripts/
+        └── descarregar_csv.sh     # Descarrega i prepara el CSV
 ```
 
 ---

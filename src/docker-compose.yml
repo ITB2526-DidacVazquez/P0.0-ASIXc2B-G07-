@@ -1,0 +1,85 @@
+# Desplegament dels serveis del projecte P0.0 (grup G07)
+#
+# Cada servei té un perfil segons el servidor on s'executa a l'arquitectura final:
+#   dmz      -> Dockers-DMZ      (Web W-NCC, FTP F-NCC)
+#   bbdd     -> Docker-B-NCC     (MySQL B-NCC)
+#   intranet -> Dockers-Intranet (DNS D-NCC, Monitor)
+#
+# MVP (tot a la mateixa VM):  COMPOSE_PROFILES=dmz,bbdd,intranet  al fitxer .env
+# Arquitectura final:          cada servidor posa només el seu perfil al .env
+#
+# Les contrasenyes van al fitxer .env (no es puja a GitHub). Vegeu .env.example.
+
+services:
+
+  # ---------- DMZ ----------
+  web:
+    image: richarvey/nginx-php-fpm:latest
+    container_name: W-NCC
+    profiles: ["dmz"]
+    restart: always
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+    volumes:
+      - ./app:/var/www/html
+
+  ftp:
+    image: delfer/alpine-ftp-server:latest
+    container_name: F-NCC
+    profiles: ["dmz"]
+    restart: always
+    environment:
+      USERS: "bchecker|bchecker121"
+      ADDRESS: ${FTP_ADDRESS:-172.29.88.10}
+      MIN_PORT: "21000"
+      MAX_PORT: "21010"
+    ports:
+      - "21:21/tcp"
+      - "21000-21010:21000-21010/tcp"
+    volumes:
+      # Carpeta pròpia de l'FTP, separada de la web
+      - ./ftp:/ftp/bchecker
+
+  # ---------- BBDD (xarxa aïllada) ----------
+  db:
+    image: mysql:8.0
+    container_name: B-NCC
+    profiles: ["bbdd"]
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: equipaments
+      WEBAPP_PASSWORD: ${WEBAPP_PASSWORD}
+      WEBAPP_HOST: ${WEBAPP_HOST:-%}
+    ports:
+      # MVP: només localhost. Final: la IP de la xarxa BBDD (172.29.89.10)
+      - "${DB_BIND_IP:-127.0.0.1}:3306:3306/tcp"
+    volumes:
+      - ./bbdd/data:/var/lib/mysql
+      - ./bbdd/init:/docker-entrypoint-initdb.d:ro
+      # MySQL 8 només permet importar fitxers des d'aquesta carpeta
+      - ./bbdd/csv:/var/lib/mysql-files
+
+  # ---------- Intranet ----------
+  dns:
+    image: internetsystemsconsortium/bind9:9.18
+    container_name: D-NCC
+    profiles: ["intranet"]
+    restart: always
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    volumes:
+      - ./dns/config:/etc/bind:ro
+      - ./dns/zones:/var/lib/bind:ro
+
+  monitor:
+    image: louislam/uptime-kuma:1
+    container_name: M-NCC
+    profiles: ["intranet"]
+    restart: always
+    ports:
+      - "3001:3001/tcp"
+    volumes:
+      - ./monitor/data:/app/data

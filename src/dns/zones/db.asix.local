@@ -1,0 +1,26 @@
+; Zona asix.local (arquitectura final)
+; Cada vegada que es modifica aquest fitxer cal INCREMENTAR el serial.
+$TTL 86400
+@       IN  SOA d-ncc.asix.local. admin.asix.local. (
+            2025102601 ; serial (AAAAMMDDnn)
+            3600       ; refresh
+            1800       ; retry
+            604800     ; expire
+            86400 )    ; minimum
+        IN  NS  d-ncc.asix.local.
+
+; Router (exigit per l'enunciat: R i R-NCC)
+r       IN  A   172.29.99.1
+r-ncc   IN  A   172.29.99.1
+
+; DMZ
+w-ncc   IN  A   172.29.88.10
+f-ncc   IN  A   172.29.88.10
+www     IN  CNAME w-ncc
+
+; Intranet
+d-ncc   IN  A   172.29.99.10
+monitor IN  A   172.29.99.10
+
+; Base de dades (xarxa aïllada, només accessible des de la DMZ)
+b-ncc   IN  A   172.29.89.10

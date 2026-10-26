@@ -1,0 +1,12 @@
+# Secrets
+.env
+app/config.php
+
+# Dades que generen els contenidors
+bbdd/data/
+monitor/data/
+ftp/*
+!ftp/.gitkeep
+
+# El CSV es descarrega amb scripts/descarregar_csv.sh
+bbdd/csv/*.csv
