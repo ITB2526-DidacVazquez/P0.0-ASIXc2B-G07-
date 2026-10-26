@@ -8,9 +8,9 @@
 1. [Eines i dinàmica de treball](#1-eines-i-dinàmica-de-treball)
 2. [Com fem servir el ProofHub](#2-com-fem-servir-el-proofhub)
 3. [Rols de l'equip](#3-rols-de-lequip)
-4. [Sprint 1](#4-sprint-1--0710--2010)
-5. [Sprint 2](#5-sprint-2--2110--0311)
-6. [Sprint 3](#6-sprint-3--0411--1811)
+4. [Sprint 1](#4-sprint-1)
+5. [Sprint 2](#5-sprint-2)
+6. [Sprint 3](#6-sprint-3)
 
 ---
 
@@ -20,27 +20,40 @@
 | :--- | :--- |
 | **ProofHub** | Backlog, repartiment de tasques, dates i seguiment de cada sprint |
 | **GitHub** | Documentació, fitxers de configuració i historial de canvis |
-| **Packet Tracer** | Disseny del mapa de xarxa abans de muntar-lo |
+| **Packet Tracer / draw.io** | Disseny del mapa de xarxa abans de muntar-lo |
 | **IsardVDI** | Màquines virtuals on despleguem la infraestructura real |
 
 **Dinàmica:**
 
 - Sprints **quinzenals** de **10 h** (5 h per setmana).
-- **Inici de sprint:** triem les tasques del backlog, les repartim i fem la **foto inicial** del tauler.
+- **Inici de sprint:** passem tasques del *Product Backlog* al *Sprint Backlog*, les repartim i fem la **foto inicial** del tauler.
 - **Cada sessió de classe:** 5 minuts per explicar què ha fet cadascú, què farà i si està bloquejat.
 - **Final de sprint:** revisem què s'ha acabat, fem la **foto final** del tauler i les tasques no acabades tornen al backlog.
 - Cada tasca acabada ha de tenir la seva documentació pujada a GitHub.
 
 ## 2. Com fem servir el ProofHub
 
-1. **Llistes de tasques:** a *Tasks* tenim una llista per sprint (`Sprint 1`, `Sprint 2`, `Sprint 3`) i una llista `Backlog` amb tot el que queda pendent.
-2. **Cada tasca té:**
-   - un **responsable** (*Assignee*);
-   - una **data d'inici i de final** dins del sprint;
-   - un **temps estimat** en hores;
-   - una **etiqueta** (*Label*): `Xarxa`, `Serveis`, `Documentació`, `Proves` o `Gestió`.
-3. **Estats:** a la vista *Board* movem cada tasca per les columnes `Per fer` → `En curs` → `Fet`.
-4. **Fotos del sprint:** fem una captura de la vista *Board* el primer i l'últim dia del sprint i la guardem a [`docs/00-gestio/img/`](img/) amb el nom `sprintN-inici.png` i `sprintN-final.png`.
+Treballem amb la **vista de tauler** (*Vista de tablón*) de *Tareas*, organitzada com un tauler Scrum. Cada tasca avança d'esquerra a dreta:
+
+| Columna | Què vol dir |
+| :--- | :--- |
+| **Product Backlog** | Totes les tasques del projecte que encara no hem planificat |
+| **Sprint Backlog** | Tasques que hem triat per fer en aquest sprint |
+| **Sprint Tasks** | Tasques del sprint repartides i a punt per començar |
+| **Doing** | Algú hi està treballant ara mateix |
+| **Test** | Feta, però pendent de provar |
+| **Waiting for Integration** | Provada, pendent d'integrar amb la resta (repositori, altres serveis...) |
+| **Sprint Done** | Acabada i documentada |
+
+**Cada tasca té:**
+
+- un **responsable** (*Cesionarios*), perquè quedi clar qui fa què;
+- una **descripció** amb els passos a seguir;
+- un criteri **"FET QUAN"**, que diu exactament quan es considera acabada (per exemple: *"captures al repo"*);
+- una **data de venciment** quan cal tenir-la en una data concreta;
+- **etiquetes** per tipus de feina (*Servidor*, *Xarxa*, *Documentació*...).
+
+**Fotos del sprint:** fem una captura del tauler el primer i l'últim dia del sprint (i alguna entremig) i la guardem a [`img/`](img/) amb el nom `sprintN-inici.png`, `sprintN-seguiment.png` i `sprintN-final.png`.
 
 ## 3. Rols de l'equip
 
@@ -54,22 +67,32 @@
 
 ---
 
-## 4. Sprint 1 · 07/10 – 20/10
+## 4. Sprint 1
 
-**Objectiu:** MVP amb la xarxa enrutada i els serveis bàsics en Docker.
+**Objectiu:** preparar la base del projecte: repositori, pla d'adreçament, diagrama, xarxes virtuals i plantilla de VM.
 
-| Tasca | Responsable | Etiqueta | Hores est. | Estat final |
-| :--- | :--- | :--- | :-: | :-: |
-| Crear el projecte al ProofHub i el backlog | Integrant 3 | Gestió | 1 | |
-| Crear el repositori GitHub i l'arbre de documentació | Dídac | Documentació | 1 | |
-| Crear les VMs a IsardVDI | Dídac | Xarxa | 1,5 | |
-| Configurar xarxa DMZ / Intranet i *IP forwarding* | Dídac | Xarxa | 2 | |
-| Instal·lar Docker i desplegar Web, DNS, MySQL i FTP | Integrant 2 | Serveis | 3 | |
-| Documentar la guia del MVP | Integrant 3 | Documentació | 1,5 | |
+| Tasca (ProofHub) | Responsable | FET QUAN | Estat final |
+| :--- | :--- | :--- | :-: |
+| Crear repositori GitHub `P0.0-ASIXc2gC-Gnn` i arbre Markdown | | Repo amb el nom de l'enunciat, col·laboradors afegits i estructura de carpetes | ✅ |
+| Descarregar i analitzar el CSV d'equipaments d'educació | | CSV a `data/`, revisats separador i codificació (UTF-8) | ✅ |
+| Definir pla d'adreçament IP (DMZ, Intranet, NAT) | | Subxarxes triades i documentades | ✅ |
+| Diagrama d'arquitectura | | Router `R-NCC`, 3 xarxes, servidors, clients i hostnames dibuixats | ✅ |
+| Crear les 3 xarxes virtuals a l'hipervisor | | Xarxes DMZ, Intranet i NAT creades | ✅ |
+| Crear plantilla VM Linux base amb usuari `bchecker` | | Ubuntu Server actualitzat, `openssh-server` i usuari `bchecker` creats | ⏳ En curs |
 
-| Inici del sprint | Final del sprint |
-| :-: | :-: |
-| ![Sprint 1 inici](img/sprint1-inici.png) | ![Sprint 1 final](img/sprint1-final.png) |
+### Fotos del tauler
+
+**Inici del sprint:** 2 tasques a *Sprint Tasks*, 4 a *Doing* i cap acabada.
+
+![Sprint 1 · inici](img/sprint1-inici.png)
+
+**Seguiment:** 3 tasques acabades, el CSV pendent d'integrar i 2 tasques en curs.
+
+![Sprint 1 · seguiment](img/sprint1-seguiment.png)
+
+**Final del sprint:** 5 tasques acabades. La plantilla de VM continua en curs i passa al sprint següent.
+
+![Sprint 1 · final](img/sprint1-final.png)
 
 **Retrospectiva:**
 
@@ -79,20 +102,20 @@
 
 ---
 
-## 5. Sprint 2 · 21/10 – 03/11
+## 5. Sprint 2
 
-**Objectiu:** arquitectura definitiva i tots els serveis funcionant.
+**Objectiu:** DNS, DHCP i proves de connectivitat. Són les tasques que ja tenim a la columna *Sprint Backlog*.
 
-| Tasca | Responsable | Etiqueta | Hores est. | Estat final |
-| :--- | :--- | :--- | :-: | :-: |
-| Dissenyar el mapa de xarxa a Packet Tracer | Dídac | Xarxa | 2 | |
-| Documentar l'arquitectura i justificar les decisions | Integrant 3 | Documentació | 2 | |
-| Configurar NAT i DHCP al router | Dídac | Xarxa | 2 | |
-| Crear la zona DNS `asix.local` (`R`, `R-NCC`...) | Integrant 2 | Serveis | 1,5 | |
-| Crear la BBDD i carregar el CSV | Integrant 2 | Serveis | 2 | |
-| Crear l'usuari `bchecker` a tots els sistemes | Integrant 2 | Serveis | 1 | |
-| Configurar SSH i la clau de GitHub | Dídac | Serveis | 1 | |
-| Documentar els serveis | Integrant 3 | Documentació | 2 | |
+| Tasca (ProofHub) | Responsable | Estat final |
+| :--- | :--- | :-: |
+| Crear plantilla VM Linux base amb usuari `bchecker` *(ve del Sprint 1)* | | |
+| Desplegar VM del servidor DNS | | |
+| Instal·lar i configurar bind9 (*forwarders*) | | |
+| Crear zona DNS: `R-NCC` i `R` apunten al router | | |
+| Provar resolució DNS des d'un client | | |
+| Configurar servidor DHCP a la Intranet (al router `R-NCC`) | | |
+| Proves de connectivitat de xarxa | | |
+| Documentar xarxa en Markdown | | |
 
 | Inici del sprint | Final del sprint |
 | :-: | :-: |
@@ -106,18 +129,19 @@
 
 ---
 
-## 6. Sprint 3 · 04/11 – 18/11
+## 6. Sprint 3
 
-**Objectiu:** aplicació web, monitor, proves i lliurament.
+**Objectiu:** FTP, SSH, Git, aplicació web, proves i lliurament. Previsió amb tasques del *Product Backlog*:
 
-| Tasca | Responsable | Etiqueta | Hores est. | Estat final |
-| :--- | :--- | :--- | :-: | :-: |
-| Desenvolupar l'aplicació web de consulta | Integrant 2 | Serveis | 3 | |
-| Desplegar el monitor de xarxa | Dídac | Serveis | 1,5 | |
-| Configurar els clients Windows i Linux | Dídac | Xarxa | 1,5 | |
-| Executar el pla de proves | Tots | Proves | 3 | |
-| Revisar i tancar la documentació | Integrant 3 | Documentació | 2 | |
-| Preparar la presentació | Tots | Gestió | 2 | |
+| Tasca (ProofHub) | Responsable | Estat final |
+| :--- | :--- | :-: |
+| Desplegar VM FTP `F-NCC` amb vsftpd | | |
+| Proves FTP des de clients Windows i Linux | | |
+| Hardening bàsic SSH | | |
+| Clau pública/privada servidor → GitHub | | |
+| Procés de pujada a producció amb Git | | |
+| Documentar SSH i FTP | | |
+| Completar arbre de documentació Markdown | | |
 
 | Inici del sprint | Final del sprint |
 | :-: | :-: |
