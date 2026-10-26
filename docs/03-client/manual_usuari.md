@@ -25,13 +25,13 @@
 
 ### 2.1 Opció A – IP fixa
 
-**Linux** (`/etc/netplan/50-cloud-init.yaml`):
+**Linux** (`/etc/netplan/99-static.yaml`, interfície `enp1s0`):
 
 ```yaml
 network:
   version: 2
   ethernets:
-    enp2s0:
+    enp1s0:
       addresses: [172.29.99.11/24]
       routes:
         - to: default
@@ -42,6 +42,7 @@ network:
 ```
 
 ```bash
+sudo chmod 600 /etc/netplan/*.yaml
 sudo netplan apply
 ```
 
@@ -60,7 +61,7 @@ Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses ("172.29.
 network:
   version: 2
   ethernets:
-    enp2s0:
+    enp1s0:
       dhcp4: true
 ```
 
@@ -106,7 +107,7 @@ Usuari per a tots els serveis: **`bchecker`** / **`bchecker121`**.
 
 | Comprovació | Linux | Windows | Resultat esperat |
 | :--- | :--- | :--- | :--- |
-| IP rebuda | `ip a show enp2s0` | `ipconfig` | IP de la Intranet |
+| IP rebuda | `ip a show enp1s0` | `ipconfig` | IP de la Intranet |
 | Gateway | `ip route` | `route print` | `default via 172.29.99.1` |
 | Router | `ping -c 3 r` | `ping r` | Respon `172.29.99.1` |
 | DNS | `dig r-ncc.asix.local +short` | `nslookup r-ncc.asix.local` | `172.29.99.1` |

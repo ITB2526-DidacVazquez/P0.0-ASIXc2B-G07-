@@ -13,7 +13,7 @@ Aquest document detalla, pas a pas, la creació de les màquines virtuals a **Is
 1. [Visió general i topologia](#1-visió-general-i-topologia)
 2. [Creació de màquines virtuals (IsardVDI)](#2-creació-de-màquines-virtuals-isardvdi)
 3. [Configuració de xarxa i enrutament](#3-configuració-de-xarxa-i-enrutament)
-4. [Desplegament de serveis (Docker)](#4-desplegament-de-serveis-en-contenidors-docker)
+4. [Instal·lació de Docker i desplegament de serveis](#4-desplegament-de-serveis-en-contenidors-docker)
 5. [Proves realitzades](#5-proves-realitzades)
 6. [Resolució d'incidències](#6-resolució-dincidències)
 7. [Publicació al repositori Git](#7-publicació-al-repositori-git)
@@ -39,7 +39,7 @@ En aquesta fase MVP, la **VM Router / Servidor (`R-NCC` / `S-NCC`)** fa de route
 | **VM Router / Servidor** | `enp1s0` | WAN (Default) | DHCP | — | — |
 | | `enp2s0` | DMZ | `172.29.88.10/24` | — | `127.0.0.1` |
 | | `enp3s0` | Intranet | `172.29.99.233/24` | — | `127.0.0.1` |
-| **Client-Lin** (Linux) | `enp2s0` | Intranet | `172.29.99.11/24` | `172.29.99.233` | `172.29.88.10` |
+| **Client-Lin** (Linux) | `enp1s0` | Intranet | `172.29.99.11/24` | `172.29.99.233` | `172.29.88.10` |
 | **Client-Win** (Windows) | `Ethernet` | Intranet | `172.29.99.12/24` | `172.29.99.233` | `172.29.88.10` |
 
 ```text
@@ -130,15 +130,18 @@ sudo sysctl -w net.ipv4.ip_forward=1
 
 ### 3.2 Client Linux (`Client-Lin`)
 
+La interfície de xarxa del client és **`enp1s0`** (comproveu-ho amb `ip a`). Es crea un fitxer de Netplan propi per a la IP fixa:
+
 ```bash
-sudo nano /etc/netplan/50-cloud-init.yaml
+sudo nano /etc/netplan/99-static.yaml
 ```
 
 ```yaml
 network:
   version: 2
   ethernets:
-    enp2s0:
+    enp1s0:
+      dhcp4: false
       addresses:
         - 172.29.99.11/24
       routes:
@@ -150,8 +153,24 @@ network:
 ```
 
 ```bash
+sudo chmod 600 /etc/netplan/*.yaml   # Netplan avisa si els fitxers els pot llegir tothom
 sudo netplan apply
+ip a show enp1s0                      # ha de sortir la IP 172.29.99.11
+ip route                              # default via 172.29.99.233
 ```
+
+> ⚠️ Si apareix l'avís *"Permissions for /etc/netplan/... are too open"*, és el `chmod 600` de dalt. No impedeix que funcioni, però s'ha de corregir.
+
+Per a les proves es van fer servir **dos clients Linux** (un per membre de l'equip), amb la mateixa configuració però IPs diferents:
+
+| Client | IP | Fitxer de Netplan |
+| :--- | :--- | :--- |
+| `Client-Lin` (`ubuntu-24`) | `172.29.99.11/24` | `01-network-manager-all.yaml` |
+| `Client-Lin 2` (`ubuntu`) | `172.29.99.13/24` | `99-static.yaml` |
+
+| `Client-Lin` (`.11`) | `Client-Lin 2` (`.13`) |
+| :-: | :-: |
+| ![Netplan del client .11](../05-proves/img/mvp-lin2-netplan.png) | ![Netplan del client .13](../05-proves/img/mvp-lin-netplan.png) |
 
 ### 3.3 Client Windows (`Client-Win`)
 
@@ -179,6 +198,39 @@ Els serveis es van desplegar a la VM Router / Servidor (`172.29.88.10`) amb Dock
 | FTP (Alpine FTP) | `F-NCC` | `delfer/alpine-ftp-server:latest` | `21`, `21000-21010` (passiu) |
 
 > ℹ️ Aquesta secció recull la configuració **tal com es va desplegar al Sprint 1**. Després es va millorar (càrrega del CSV, registres `R` i `R-NCC`, perfils per servidor, usuari de només lectura per a la web...). La versió actual és la de la carpeta [`src/`](../../src/), documentada a [serveis.md](serveis.md#01-desplegament-amb-docker-compose).
+
+### 4.0 Instal·lació de Docker
+
+Docker s'instal·la des del repositori oficial de Docker (la versió dels repositoris d'Ubuntu és més antiga i no porta el connector `docker compose`):
+
+```bash
+# 1. Dependències i clau GPG del repositori de Docker
+sudo apt update
+sudo apt install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# 2. Afegir el repositori
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# 3. Instal·lar Docker Engine i Docker Compose
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 4. Comprovar-ho
+sudo docker run hello-world
+docker compose version
+```
+
+També cal **Git** per clonar el repositori al servidor:
+
+```bash
+sudo apt install -y git
+git --version
+```
 
 ### 4.1 Credencials al fitxer `.env`
 
@@ -318,18 +370,63 @@ sudo systemctl restart systemd-resolved
 
 ## 5. Proves realitzades
 
-Proves fetes des dels clients de la Intranet un cop desplegada la pila del Sprint 1.
+Proves fetes el 26/10 un cop desplegada la pila del Sprint 1, des del servidor i des dels clients de la Intranet.
 
-| # | Servei | Ordre | Resultat obtingut |
-| :-: | :--- | :--- | :--- |
-| 1 | Enrutament (L3) | `ping -c 3 172.29.88.10` | El client arriba a la DMZ a través del router |
-| 2 | Web per IP | `curl -I http://172.29.88.10` | `HTTP/1.1 200 OK` |
-| 3 | Web per nom | `curl -I http://s-ncc.asix.local` | `HTTP/1.1 200 OK` |
-| 4 | DNS | `dig @172.29.88.10 s-ncc.asix.local` | Registre A amb la IP `172.29.88.10` |
-| 5 | BBDD | `mysql -h 172.29.88.10 -u bchecker -p -e "USE asix_db; SELECT * FROM usuari_test;"` | Retorna la fila d'inicialització |
-| 6 | FTP | Login amb `bchecker` i `ls` (vegeu a sota) | Autenticació correcta i llistat en mode passiu |
+### 5.1 Servidor: contenidors en marxa
 
-Prova de l'FTP:
+`docker ps` a la VM Router / Servidor: els quatre contenidors (`W-NCC`, `B-NCC`, `F-NCC`, `D-NCC`) en estat `Up`.
+
+![docker ps al servidor](../05-proves/img/mvp-servidor-docker-ps.png)
+
+Fitxer `docker-compose.yml` desplegat (les contrasenyes venen del `.env`):
+
+<details>
+<summary>Veure la captura</summary>
+
+![docker-compose.yml al servidor](../05-proves/img/mvp-servidor-docker-compose.png)
+
+</details>
+
+### 5.2 DNS
+
+`dig @127.0.0.1 s-ncc.asix.local` des del servidor: respon amb el registre A `172.29.88.10`.
+
+![dig al servidor](../05-proves/img/mvp-servidor-dig.png)
+
+### 5.3 Client Linux
+
+`ping` al router (`172.29.99.233`) i al servidor de la DMZ (`172.29.88.10`): 0 % de pèrdua. El client arriba a la DMZ passant pel router.
+
+![ping des del client Linux](../05-proves/img/mvp-lin-ping.png)
+
+Accés a la web `http://172.29.88.10` amb Firefox: la pàgina confirma la connexió a MySQL amb l'usuari `bchecker`.
+
+![web des del client Linux](../05-proves/img/mvp-lin-web.png)
+
+### 5.4 Client Windows
+
+`ping 172.29.88.10`: 0 % de pèrdua.
+
+![ping des del client Windows](../05-proves/img/mvp-win-ping.png)
+
+Accés a la web `http://172.29.88.10`:
+
+![web des del client Windows](../05-proves/img/mvp-win-web.png)
+
+### 5.5 Resum
+
+| # | Prova | Des d'on | Resultat | Evidència |
+| :-: | :--- | :--- | :-: | :-: |
+| 1 | Contenidors en marxa (`docker ps`) | Servidor | ✅ | [§5.1](#51-servidor-contenidors-en-marxa) |
+| 2 | DNS: `s-ncc.asix.local` → `172.29.88.10` | Servidor | ✅ | [§5.2](#52-dns) |
+| 3 | Ping al router i a la DMZ | Client Linux | ✅ | [§5.3](#53-client-linux) |
+| 4 | Ping a la DMZ | Client Windows | ✅ | [§5.4](#54-client-windows) |
+| 5 | Web + connexió a MySQL amb `bchecker` | Client Linux | ✅ | [§5.3](#53-client-linux) |
+| 6 | Web + connexió a MySQL amb `bchecker` | Client Windows | ✅ | [§5.4](#54-client-windows) |
+| 7 | DNS des d'un client (`dig @172.29.88.10 s-ncc.asix.local`) | Client | ⏳ | Sense captura |
+| 8 | FTP: login amb `bchecker` i `ls` | Client | ⏳ | Sense captura |
+
+Ordre per a la prova de l'FTP (pendent de captura):
 
 ```bash
 ftp -n 172.29.88.10 <<EOF
@@ -338,14 +435,6 @@ ls
 quit
 EOF
 ```
-
-Comprovació de ruta al client Linux:
-
-```bash
-ip route          # ha de mostrar només: default via 172.29.99.233
-```
-
-> 📸 Les captures de pantalla d'aquestes proves es guarden a [`docs/05-proves/img/`](../05-proves/img/) com a evidència.
 
 ## 6. Resolució d'incidències
 
@@ -394,4 +483,6 @@ Revisió del que va quedar pendent al final del Sprint 1 i on s'ha resolt:
 - [ ] Fer persistent el *IP forwarding* (`/etc/sysctl.d/99-ipforward.conf`, vegeu [§3.1](#31-vm-router--servidor))
 - [ ] Configurar NAT (`MASQUERADE` per `enp1s0`) per donar Internet als clients
 - [ ] Desplegar l'arquitectura final repartida en tres servidors ([arquitectura.md](arquitectura.md))
-- [ ] Afegir les captures de les proves a `docs/05-proves/img/`
+- [x] Afegir les captures de les proves a `docs/05-proves/img/` → [§5](#5-proves-realitzades)
+- [ ] Captures de les proves de DNS des d'un client i de l'FTP
+- [ ] Corregir els permisos dels fitxers de Netplan dels clients (`chmod 600`)

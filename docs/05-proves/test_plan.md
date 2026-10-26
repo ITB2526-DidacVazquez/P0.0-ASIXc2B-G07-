@@ -141,6 +141,6 @@
 
 | Data | Sprint | Proves executades | OK | KO | Responsable | Observacions |
 | :--- | :-: | :--- | :-: | :-: | :--- | :--- |
-| | 1 | Proves del MVP ([guia MVP §5](../02-admin/MVP_sprint1_infraestructura-config.md#5-proves-realitzades)) | 6 | 0 | Dídac Vázquez | Arquitectura MVP (tot en una VM). Les proves d'aquest pla són per a l'arquitectura final |
+| 26/10 | 1 | Proves del MVP ([guia MVP §5](../02-admin/MVP_sprint1_infraestructura-config.md#5-proves-realitzades)) | 6 | 0 | Equip | Arquitectura MVP (tot en una VM), amb captures. Pendents: FTP i DNS des d'un client |
 | | 2 | | | | | |
 | | 3 | | | | | |
