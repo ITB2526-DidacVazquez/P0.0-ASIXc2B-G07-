@@ -16,27 +16,26 @@
 
 ---
 
-## 📌 Descripció del Projecte (MVP - Sprint 1)
+## 📌 Descripció del Projecte
 
-Aquest projecte té com a objectiu el disseny, configuració i desplegament d'una **infraestructura de xarxa multicapa** per suportar una aplicació web corporativa i serveis de xarxa.
+Aquest projecte té com a objectiu el disseny, configuració i desplegament d'una **infraestructura de xarxa multicapa** per suportar una aplicació web i serveis de xarxa (Web, FTP, SSH, BBDD, DHCP, DNS i monitor).
 
-En la fase de **MVP (Sprint 1)**, la **VM Router / Servidor** allotja directament la pila de serveis en contenidors Docker i gestiona l'enrutament directe entre la xarxa Intranet i la DMZ.
+- **Sprint 1 (MVP):** tots els serveis en contenidors Docker dins d'una sola VM ([guia del MVP](docs/02-admin/MVP_sprint1_infraestructura-config.md)).
+- **Arquitectura final:** router `R-NCC` amb DMZ, Intranet i NAT, i la base de dades en una xarxa aïllada ([arquitectura i justificació](docs/02-admin/arquitectura.md)).
 
 ---
 
-## 🗺️ Taula d'Adreçament IP (MVP Realitzat)
+## 🗺️ Mapa de xarxa
 
-| Equip / Rol | Interfície | Subxarxa / Rol | Adreça IP | Porta d'Enllaç (*Gateway*) | Servidor DNS |
+![Mapa de xarxa](docs/img/arquitectura_xarxa.png)
+
+| Equip | Xarxa | Adreça IP | Gateway | DNS | Serveis |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`VM Router / Servidor`** | `enp2s0`<br>`enp3s0` | DMZ (Serveis)<br>Intranet (Clients) | `172.29.88.10/24`<br>`172.29.99.233/24` | N/A<br>N/A | `127.0.0.1`<br>`127.0.0.1` |
-| **`Client-Lin` (Linux)** | `enp2s0` | Intranet | `172.29.99.11/24` | `172.29.99.233` | `172.29.88.10` |
-| **`Client-Win` (Windows)** | Adaptador | Intranet | `172.29.99.12/24` | `172.29.99.233` | `172.29.88.10` |
-
-### 🐳 Serveis Desplegats en Docker
-* **Web (Nginx + PHP-FPM):** `http://172.29.88.10` / `http://s-ncc.asix.local`
-* **DNS (BIND9):** `172.29.88.10:53`
-* **Base de Dades (MySQL 8.0):** `172.29.88.10:3306`
-* **FTP (Alpine FTP):** `172.29.88.10:21`
+| **`R-NCC`** (router) | DMZ / Intranet / NAT | `172.29.88.1` · `172.29.99.1` · DHCP | — | `172.29.99.10` | Enrutament, DHCP, NAT |
+| **`Dockers-DMZ`** | DMZ | `172.29.88.10/24` | `172.29.88.1` | `172.29.99.10` | Web (`W-NCC`), FTP (`F-NCC`), SSH |
+| **`Docker-B-NCC`** | BBDD (aïllada) | `172.29.89.10/24` | — | — | MySQL (`B-NCC`) |
+| **`Dockers-Intranet`** | Intranet | `172.29.99.10/24` | `172.29.99.1` | `127.0.0.1` | DNS (`D-NCC`), Monitor |
+| **Clients** (Windows i Linux) | Intranet | DHCP `172.29.99.100-200` | `172.29.99.1` | `172.29.99.10` | — |
 
 ---
 
@@ -44,6 +43,7 @@ En la fase de **MVP (Sprint 1)**, la **VM Router / Servidor** allotja directamen
 
 | Document | Contingut |
 | :--- | :--- |
+| [00 · Gestió (ProofHub)](docs/00-gestio/proofhub.md) | Dinàmica de treball, repartiment de tasques i fotos de cada sprint |
 | [01 · Estudi previ](docs/01-analisi/estudi_previ.md) | Requisits, planificació en sprints (ProofHub) i justificació tecnològica |
 | [02 · Arquitectura](docs/02-admin/arquitectura.md) | Diagrama de xarxa, inventari d'equips, adreçament IP i noms DNS |
 | [02 · Guia MVP Sprint 1](docs/02-admin/MVP_sprint1_infraestructura-config.md) | Creació de VMs, xarxa, enrutament i Docker pas a pas |
@@ -57,10 +57,14 @@ En la fase de **MVP (Sprint 1)**, la **VM Router / Servidor** allotja directamen
 P0.0-ASIXc2B-G07/
 ├── README.md                      # Presentació i índex principal del projecte
 ├── docs/
+│   ├── 00-gestio/                 # Gestió del projecte: ProofHub, sprints i retrospectives
+│   │   ├── proofhub.md
+│   │   └── img/                   # Fotos del tauler a l'inici i al final de cada sprint
+│   ├── img/                       # Mapa de xarxa (Packet Tracer)
 │   ├── 01-analisi/                # Estudi previ i justificació tecnològica (RA1)
 │   │   └── estudi_previ.md
 │   ├── 02-admin/                  # Manuals de configuració d'administrador (RA3, RA4)
-│   │   ├── arquitectura.md        # Diagrames de xarxa i taules d'IPs detallades
+│   │   ├── arquitectura.md        # Mapa de xarxa, IPs i justificació de decisions
 │   │   ├── MVP_sprint1_infraestructura-config.md  # Guia de desplegament del MVP
 │   │   ├── serveis.md             # Guia de serveis (SSH, Web, BBDD, DHCP, DNS, FTP...)
 │   │   └── git_workflow.md        # Procediment i comandes del flux de treball Git
@@ -77,3 +81,10 @@ P0.0-ASIXc2B-G07/
     ├── dns/                       # named.conf i fitxer de zona asix.local
     ├── app/                       # Codi de l'aplicació Web
     └── scripts/                   # Scripts d'automatització
+```
+
+---
+
+## 🔑 Accés per a la correcció
+
+Tots els sistemes i serveis tenen l'usuari **`bchecker`** amb contrasenya **`bchecker121`**.

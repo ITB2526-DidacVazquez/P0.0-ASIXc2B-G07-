@@ -4,6 +4,8 @@
 > **Repositori:** `P0.0-ASIXc2B-G07`
 > **Responsable:** Dídac Vázquez (Coordinador Git i Administrador de Xarxa)
 
+> ℹ️ Aquesta guia descriu el **MVP del Sprint 1**, amb tots els serveis en una sola VM. L'arquitectura final (serveis repartits en DMZ, Intranet i xarxa de BBDD) i la justificació de les decisions són a [arquitectura.md](arquitectura.md).
+
 Aquest document detalla, pas a pas, la creació de les màquines virtuals a **IsardVDI**, la configuració de les interfícies de xarxa, l'enrutament i la posada en marxa dels serveis en contenidors Docker del **MVP del Sprint 1**.
 
 ## Índex
@@ -279,7 +281,7 @@ ip route          # ha de mostrar només: default via 172.29.99.233
 Per evitar el conflicte amb SSH/LDAP, es treballa amb el remot HTTPS:
 
 ```bash
-git remote set-url origin https://github.com/ITB2526-DidacVazquez/P0.0-ASIXc2B-G07.git
+git remote set-url origin https://github.com/ITB2526-DidacVazquez/P0.0-ASIXc2B-G07-.git
 git add .
 git commit -m "docs: afegir guia MVP Sprint 1"
 git push origin main
@@ -302,4 +304,4 @@ Quan Git demani credencials:
 - [ ] Restringir el port `3306` (no exposar MySQL a tota la xarxa) amb `ufw` / `iptables`.
 - [ ] Fixar versions d'imatge (evitar `:latest`) per assegurar reproducibilitat.
 - [ ] Automatitzar el desplegament amb un script a `src/scripts/`.
-- [ ] Completar `docs/05-proves/test_plan.md` amb les proves de la secció 5.
+- [x] Completar `docs/05-proves/test_plan.md` amb les proves de la secció 5.

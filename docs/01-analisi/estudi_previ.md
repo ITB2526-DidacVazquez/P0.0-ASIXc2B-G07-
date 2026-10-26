@@ -35,10 +35,11 @@ Preparar la infraestructura per a una aplicació multicapa formada per: **servid
 | 11 | Repositori Git amb autenticació per clau pública/privada | [git_workflow.md](../02-admin/git_workflow.md) |
 | 12 | Diagrama d'arquitectura | [arquitectura.md](../02-admin/arquitectura.md#2-diagrama-de-xarxa) |
 | 13 | Arbre de documentació Markdown | [README.md](../../README.md#-estructura-de-la-documentació) |
+| 14 | Planificació i repartiment de tasques al ProofHub | [proofhub.md](../00-gestio/proofhub.md) |
 
 ## 3. Planificació (ProofHub i sprints)
 
-Les tasques es planifiquen al **ProofHub**, al projecte `P0.0-ASIXc2B-G07`. Els sprints són **quinzenals** (5 h/setmana → **10 h per sprint**), amb un total de **3 sprints**.
+Les tasques es planifiquen al **ProofHub** (detall a [proofhub.md](../00-gestio/proofhub.md)), al projecte `P0.0-ASIXc2B-G07`. Els sprints són **quinzenals** (5 h/setmana → **10 h per sprint**), amb un total de **3 sprints**.
 
 | Sprint | Dates | Objectiu | Entregables principals |
 | :-: | :--- | :--- | :--- |
