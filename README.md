@@ -44,6 +44,7 @@ Aquest projecte té com a objectiu el disseny, configuració i desplegament d'un
 | Document | Contingut |
 | :--- | :--- |
 | [00 · Gestió (ProofHub)](docs/00-gestio/proofhub.md) | Dinàmica de treball, repartiment de tasques i fotos de cada sprint |
+| [00 · Guia del Sprint 1](docs/00-gestio/guia_sprint1.md) | Llista de comprovació per tancar el Sprint 1 (ProofHub i GitHub) |
 | [01 · Estudi previ](docs/01-analisi/estudi_previ.md) | Requisits, planificació en sprints (ProofHub) i justificació tecnològica |
 | [02 · Arquitectura](docs/02-admin/arquitectura.md) | Diagrama de xarxa, inventari d'equips, adreçament IP i noms DNS |
 | [02 · Guia MVP Sprint 1](docs/02-admin/MVP_sprint1_infraestructura-config.md) | Creació de VMs, xarxa, enrutament i Docker pas a pas |
@@ -59,6 +60,7 @@ P0.0-ASIXc2B-G07/
 ├── docs/
 │   ├── 00-gestio/                 # Gestió del projecte: ProofHub, sprints i retrospectives
 │   │   ├── proofhub.md
+│   │   ├── guia_sprint1.md        # Llista de comprovació per tancar el Sprint 1
 │   │   └── img/                   # Fotos del tauler a l'inici i al final de cada sprint
 │   ├── img/                       # Mapa de xarxa (Packet Tracer)
 │   ├── 01-analisi/                # Estudi previ i justificació tecnològica (RA1)

@@ -13,7 +13,7 @@ Aquest document detalla, pas a pas, la creació de les màquines virtuals a **Is
 1. [Visió general i topologia](#1-visió-general-i-topologia)
 2. [Creació de màquines virtuals (IsardVDI)](#2-creació-de-màquines-virtuals-isardvdi)
 3. [Configuració de xarxa i enrutament](#3-configuració-de-xarxa-i-enrutament)
-4. [Desplegament de serveis (Docker)](#4-desplegament-de-serveis-en-contenidors-docker)
+4. [Instal·lació de Docker i desplegament de serveis](#4-desplegament-de-serveis-en-contenidors-docker)
 5. [Proves realitzades](#5-proves-realitzades)
 6. [Resolució d'incidències](#6-resolució-dincidències)
 7. [Publicació al repositori Git](#7-publicació-al-repositori-git)
@@ -179,6 +179,39 @@ Els serveis es van desplegar a la VM Router / Servidor (`172.29.88.10`) amb Dock
 | FTP (Alpine FTP) | `F-NCC` | `delfer/alpine-ftp-server:latest` | `21`, `21000-21010` (passiu) |
 
 > ℹ️ Aquesta secció recull la configuració **tal com es va desplegar al Sprint 1**. Després es va millorar (càrrega del CSV, registres `R` i `R-NCC`, perfils per servidor, usuari de només lectura per a la web...). La versió actual és la de la carpeta [`src/`](../../src/), documentada a [serveis.md](serveis.md#01-desplegament-amb-docker-compose).
+
+### 4.0 Instal·lació de Docker
+
+Docker s'instal·la des del repositori oficial de Docker (la versió dels repositoris d'Ubuntu és més antiga i no porta el connector `docker compose`):
+
+```bash
+# 1. Dependències i clau GPG del repositori de Docker
+sudo apt update
+sudo apt install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# 2. Afegir el repositori
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# 3. Instal·lar Docker Engine i Docker Compose
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 4. Comprovar-ho
+sudo docker run hello-world
+docker compose version
+```
+
+També cal **Git** per clonar el repositori al servidor:
+
+```bash
+sudo apt install -y git
+git --version
+```
 
 ### 4.1 Credencials al fitxer `.env`
 
