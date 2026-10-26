@@ -10,9 +10,9 @@
 
 | Nom i Cognoms | Usuari GitHub | Rol Principal |
 | :--- | :--- | :--- |
-| **Dídac Vázquez** | [@ITB2526-DidacVazquez](https://github.com/ITB2526-DidacVazquez) | Coordinador Git / Administrador de Xarxa |
-| **Nom Integrant 2** | [@usuari2](https://github.com/) | Administrador de Serveis (DMZ / Intranet) |
-| **Nom Integrant 3** | [@usuari3](https://github.com/) | Desenvolupador i Documentació / PRL |
+| **Dídac Vázquez** | [DidacVazquez](https://github.com/ITB2526-DidacVazquez) | Coordinador Git / Administrador de Xarxa |
+| **Nom Integrant 2** | [LiamTebar](https://github.com/) | Administrador de Serveis (DMZ / Intranet) |
+| **Nom Integrant 3** | [GerardRomo](https://github.com/) | Desenvolupador i Documentació / PRL |
 
 ---
 
